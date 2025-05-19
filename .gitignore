@@ -1,28 +1,3 @@
-# logs
-logs
-*.log
-npm-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
-
-# editor directories and files
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# vite
-.vite/
-
-#macOS
 .DS_Store
 
-#windows
-Thumbs.db
+**/node_modules/
