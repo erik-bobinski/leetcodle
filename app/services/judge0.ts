@@ -1,41 +1,19 @@
-const JUDGE0_HOST = "judge0-ce.p.rapidapi.com";
-const JUDGE0_BASE_URL = `https://${JUDGE0_HOST}`;
-const RAPIDAPI_KEY = process.env.NEXT_PUBLIC_RAPIDAPI_KEY || "";
+//TODO: instead of string type as error, return Judge0ErrorResponse?
 
-if (!RAPIDAPI_KEY) {
-  console.warn(
-    "RapidAPI key not found. Please set NEXT_PUBLIC_RAPIDAPI_KEY in your .env file"
-  );
-}
-
-const headers = {
-  "content-type": "application/json",
-  "X-RapidAPI-Key": RAPIDAPI_KEY,
-  "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com"
-};
-
-export interface ExecutionResult {
-  stdout: string | null;
-  time: string;
-  memory: number;
-  stderr: string | null;
-  token: string;
-  compile_output: string | null;
-  status: {
-    id: number;
-    description: string;
-  };
-}
+import {
+  Judge0ExecutionResponse,
+  Judge0SubmissionResponse
+} from "@/types/judge0";
 
 /**
  * Submits code to Judge0 API server-side
- * @param sourceCode The code to execute
- * @param languageId The language ID (default: 63 for JavaScript)
- * @returns A token that can be used to fetch the execution result
+ * @param source_code The code to execute
+ * @param language_id The language ID
+ * @returns A token that can be used to fetch the execution result, or an error
  */
 export async function submitCode(
-  sourceCode: string,
-  languageId: number = 63
+  source_code: string,
+  language_id: number
 ): Promise<string> {
   try {
     const response = await fetch("/api/judge0", {
@@ -44,62 +22,80 @@ export async function submitCode(
         "content-type": "application/json"
       },
       body: JSON.stringify({
-        sourceCode,
-        languageId
+        source_code,
+        language_id
       })
     });
-
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`${response.json()}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as Judge0SubmissionResponse;
     return data.token;
   } catch (error) {
-    console.error("Error submitting code:", error);
-    throw error;
+    if (error instanceof Error) {
+      console.error(error.message);
+      return error.message;
+    }
+    console.error(`Unknown error occurred: ${error}`);
+    return `Unknown error occurred: ${error}`;
   }
 }
 
 /**
- * Fetches the execution result for a given submission token through our secure backend
+ * Fetches the execution result for a given submission token
  * @param token The submission token received from submitCode
- * @returns The execution result containing stdout, stderr, and status
+ * @returns The execution result or error
  */
 export async function getExecutionResult(
   token: string
-): Promise<ExecutionResult> {
+): Promise<Judge0ExecutionResponse | string> {
   try {
     const response = await fetch(`/api/judge0?token=${token}`);
-
+    const data = (await response.json()) as Judge0ExecutionResponse;
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`${data}`);
     }
 
-    return await response.json();
+    return data;
   } catch (error) {
-    console.error("Error getting execution result:", error);
-    throw error;
+    if (error instanceof Error) {
+      console.error(error.message);
+      return error.message;
+    }
+    console.error(error);
+    return `Unknown error occurred: ${error}`;
   }
 }
 
 /**
- * Polls the execution result until it's ready
+ * Polls the execution result server-side until it's ready
  * @param token The submission token
- * @param interval Polling interval in milliseconds (default: 1000)
- * @returns The final execution result
+ * @returns The final execution result or error
  */
 export async function pollExecutionResult(
-  token: string,
-  interval: number = 1000
-): Promise<ExecutionResult> {
-  const result = await getExecutionResult(token);
+  token: string
+): Promise<Judge0ExecutionResponse | string> {
+  try {
+    const response = await fetch("/api/judge0", {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ token })
+    });
+    const data = (await response.json()) as Judge0ExecutionResponse;
+    if (!response.ok) {
+      throw new Error(`${data}`);
+    }
 
-  // Status ID 1 or 2 means the submission is still in queue or processing
-  if (result.status.id === 1 || result.status.id === 2) {
-    await new Promise((resolve) => setTimeout(resolve, interval));
-    return pollExecutionResult(token, interval);
+    return await data;
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error(error.message);
+      return error.message;
+    }
+    console.error(error);
+    return `Unknown error occurred: ${error}`;
   }
-
-  return result;
 }

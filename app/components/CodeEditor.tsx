@@ -1,10 +1,41 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { EditorView, basicSetup } from "codemirror";
-import { javascript } from "@codemirror/lang-javascript";
 import { createTheme } from "thememirror";
 import { tags as t } from "@lezer/highlight";
+import { EditorState } from "@codemirror/state";
+import {
+  EditorView,
+  keymap,
+  highlightSpecialChars,
+  drawSelection,
+  highlightActiveLine,
+  dropCursor,
+  rectangularSelection,
+  crosshairCursor,
+  lineNumbers,
+  highlightActiveLineGutter
+} from "@codemirror/view";
+import {
+  indentOnInput,
+  bracketMatching,
+  foldGutter,
+  foldKeymap
+} from "@codemirror/language";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
+import {
+  autocompletion,
+  completionKeymap,
+  closeBrackets,
+  closeBracketsKeymap
+} from "@codemirror/autocomplete";
+import { lintKeymap } from "@codemirror/lint";
+import { javascript } from "@codemirror/lang-javascript";
+import { rust } from "@codemirror/lang-rust";
+import { python } from "@codemirror/lang-python";
+import { cpp } from "@codemirror/lang-cpp";
+import { go } from "@codemirror/lang-go";
+import { useState, useEffect, useRef } from "react";
 
 const leetcodleTheme = createTheme({
   variant: "dark",
@@ -35,18 +66,137 @@ const leetcodleTheme = createTheme({
   ]
 });
 
+type Language = {
+  name: string;
+  extension: () => any;
+  boilerplate: string;
+};
+
+const languages: Record<string, Language> = {
+  cpp: {
+    name: "C++",
+    extension: cpp,
+    boilerplate: `#include <iostream>
+#include <vector>
+
+class Solution {
+public:
+    // Your code here
+};
+
+int main() {
+    Solution solution;
+    return 0;
+}`
+  },
+  go: {
+    name: "Go",
+    extension: go,
+    boilerplate: `package main
+
+func solution() {
+    // Your code here
+}
+
+func main() {
+    solution()
+}`
+  },
+  javascript: {
+    name: "JavaScript",
+    extension: javascript,
+    boilerplate: `function solution() {
+  // Your code here
+}`
+  },
+  python: {
+    name: "Python",
+    extension: python,
+    boilerplate: `def solution():
+    # Your code here
+    pass
+
+if __name__ == "__main__":
+    solution()`
+  },
+  rust: {
+    name: "Rust",
+    extension: rust,
+    boilerplate: `fn solution() {
+    // Your code here
+}
+
+fn main() {
+    solution();
+}`
+  }
+};
+
 export default function CodeEditor() {
   const editorRef = useRef<HTMLDivElement>(null);
+  const [currentLang, setCurrentLang] = useState<keyof typeof languages>("cpp");
+  const lang = languages[currentLang].extension();
+
+  const getLangName = () => languages[currentLang].name;
 
   useEffect(() => {
     if (!editorRef.current) return;
 
     const view = new EditorView({
-      doc: "// Write your code here\n",
+      doc: languages[currentLang].boilerplate,
+      parent: editorRef.current,
       extensions: [
-        basicSetup,
-        javascript(),
+        lang,
+        // A line number gutter
+        lineNumbers(),
+        // A gutter with code folding markers
+        foldGutter(),
+        // Replace non-printable characters with placeholders
+        highlightSpecialChars(),
+        // The undo history
+        history(),
+        // Replace native cursor/selection with our own
+        drawSelection(),
+        // Show a drop cursor when dragging over the editor
+        dropCursor(),
+        // Allow multiple cursors/selections
+        EditorState.allowMultipleSelections.of(true),
+        // Re-indent lines when typing specific input
+        indentOnInput(),
+        // Use our custom theme
         leetcodleTheme,
+        // Highlight matching brackets near cursor
+        bracketMatching(),
+        // Automatically close brackets
+        closeBrackets(),
+        // Load the autocompletion system
+        autocompletion(),
+        // Allow alt-drag to select rectangular regions
+        rectangularSelection(),
+        // Change the cursor to a crosshair when holding alt
+        crosshairCursor(),
+        // Style the current line specially
+        highlightActiveLine(),
+        // Style the gutter for current line specially
+        highlightActiveLineGutter(),
+        // Highlight text that matches the selected text
+        highlightSelectionMatches(),
+        keymap.of([
+          // Closed-brackets aware backspace
+          ...closeBracketsKeymap,
+          // A large set of basic bindings
+          ...defaultKeymap,
+          // Search-related keys
+          ...searchKeymap,
+          // Redo/undo keys
+          ...historyKeymap,
+          // Code folding bindings
+          ...foldKeymap,
+          // Autocompletion keys
+          ...completionKeymap,
+          // Keys related to the linter system
+          ...lintKeymap
+        ]),
         EditorView.theme({
           "&": {
             height: "300px",
@@ -57,18 +207,32 @@ export default function CodeEditor() {
             fontFamily: "var(--font-mono)"
           }
         })
-      ],
-      parent: editorRef.current
+      ]
     });
+
+    view.focus(); // Focus the editor on mount
 
     return () => {
       view.destroy();
     };
-  }, []);
+  }, [lang]);
 
   return (
     <div className="w-full">
-      <div ref={editorRef} className="w-full" />
+      <select
+        value={currentLang}
+        onChange={(e) =>
+          setCurrentLang(e.target.value as keyof typeof languages)
+        }
+        className="mb-2 p-1 rounded bg-[#1b222c] text-[#a6accd] border border-[#2d3a4e]"
+      >
+        {Object.entries(languages).map(([key, lang]) => (
+          <option key={key} value={key}>
+            {lang.name}
+          </option>
+        ))}
+      </select>
+      <div ref={editorRef} />
     </div>
   );
 }

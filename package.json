@@ -9,12 +9,22 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.18.6",
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/lang-cpp": "^6.0.2",
+    "@codemirror/lang-go": "^6.0.1",
     "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/lang-rust": "^6.0.1",
+    "@codemirror/language": "^6.11.1",
+    "@codemirror/lint": "^6.8.5",
+    "@codemirror/search": "^6.5.11",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.37.1",
     "@lezer/highlight": "^1.2.1",
     "codemirror": "^6.0.1",
     "next": "15.3.2",
     "react": "^19.0.0",
-    "react-codemirror2": "^8.0.1",
     "react-dom": "^19.0.0",
     "thememirror": "^2.0.1"
   },

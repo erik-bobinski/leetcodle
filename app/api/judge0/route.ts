@@ -1,53 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
+import type {
+  Judge0Response,
+  Judge0CodeSubmission,
+  Judge0SubmissionResponse,
+  Judge0ExecutionResponse
+} from "@/types/judge0";
+import { isExecutionResponse, isSubmissionResponse } from "@/types/judge0";
 
+// api params
 const JUDGE0_HOST = "judge0-ce.p.rapidapi.com";
 const JUDGE0_BASE_URL = `https://${JUDGE0_HOST}`;
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
-
 if (!RAPIDAPI_KEY) {
   throw new Error("Rapid API Key was not set in env!");
 }
 
+// auth headers for api
 const headers = {
   "content-type": "application/json",
   "X-RapidAPI-Key": RAPIDAPI_KEY,
   "X-RapidAPI-Host": JUDGE0_HOST
 };
 
-// submit program for RCE from Judge0
-export async function POST(request: NextRequest) {
-  try {
-    const { sourceCode, languageId } = await request.json();
+// Constants for rate limiting
+const MAX_POLL_RETRIES = 20;
+const POLL_INTERVAL = 500; // ms
 
-    console.log("Making request to Judge0 with:", {
-      url: JUDGE0_BASE_URL,
-      headers: { ...headers, "X-RapidAPI-Key": "[REDACTED]" }
-    });
+// submit program for RCE to Judge0
+export async function POST(request: Judge0CodeSubmission) {
+  try {
+    const { source_code, language_id } = await request.json();
 
     const response = await fetch(`${JUDGE0_BASE_URL}/submissions`, {
       method: "POST",
       headers,
       body: JSON.stringify({
-        source_code: sourceCode,
-        language_id: languageId || 63
+        source_code,
+        language_id
       })
     });
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Judge0 API error response:", errorText);
-      throw new Error(`Judge0 API error: ${response.status} - ${errorText}`);
+      return NextResponse.json(
+        { error: await response.json() },
+        { status: response.status }
+      );
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as Judge0SubmissionResponse;
+    if (!isSubmissionResponse(data)) {
+      return NextResponse.json(
+        { error: "Unexpected response type from Judge0 submission" },
+        { status: 500 }
+      );
+    }
 
-    //TODO: remove later after testing
-    console.log("Judge0 POST response:", data);
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error submitting code:", error);
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
     return NextResponse.json(
-      { error: "Failed to submit code" },
+      { error: "An unknown error occurred" },
       { status: 500 }
     );
   }
@@ -57,29 +70,120 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const token = request.nextUrl.searchParams.get("token");
-
     if (!token) {
-      return NextResponse.json({ error: "Token is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "No token in URL Search Params" },
+        { status: 400 }
+      );
     }
 
     const response = await fetch(`${JUDGE0_BASE_URL}/submissions/${token}`, {
       headers
     });
-
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      return NextResponse.json(
+        { error: await response.json() },
+        { status: response.status }
+      );
     }
 
-    const data = await response.json();
-
-    //TODO: remove later after testing
-    console.log("Judge0 GET Response: ", data);
+    const data = (await response.json()) as Judge0ExecutionResponse;
+    if (!isExecutionResponse(data)) {
+      return NextResponse.json(
+        { error: "Unexpected response type from Judge0 execution" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error getting execution result:", error);
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
     return NextResponse.json(
-      { error: "Failed to get execution result" },
+      { error: "An unknown error occurred" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Server-side polling that enforces rate limits.
+ * Keep trying to get a result some amount of times,
+ * return as soon as we get a non-pending response or reach our limit
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const { token } = await request.json();
+    if (!token) {
+      return NextResponse.json(
+        { error: "No token provided in request body" },
+        { status: 400 }
+      );
+    }
+
+    let currentRetry = 0;
+    while (currentRetry < MAX_POLL_RETRIES - 1) {
+      const response = await fetch(`${JUDGE0_BASE_URL}/submissions/${token}`, {
+        headers
+      });
+
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: await response.json() },
+          { status: response.status }
+        );
+      }
+
+      const data = (await response.json()) as Judge0ExecutionResponse;
+      if (!isExecutionResponse(data)) {
+        return NextResponse.json(
+          { error: "Unexpected response type from Judge0 execution" },
+          { status: 500 }
+        );
+      }
+
+      // if we got a result (not in queue or not processing),
+      // return it immediately
+      if (data.status.id !== 1 && data.status.id !== 2) {
+        return NextResponse.json(data);
+      }
+
+      // otherwise, the judge0 response is pending
+      // wait for an interval and try again
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL));
+      currentRetry++;
+    }
+
+    // If we've exhausted our retries, return the last result
+    const finalResponse = await fetch(
+      `${JUDGE0_BASE_URL}/submissions/${token}`,
+      {
+        headers
+      }
+    );
+    if (!finalResponse.ok) {
+      return NextResponse.json(
+        { error: await finalResponse.json() },
+        { status: finalResponse.status }
+      );
+    }
+
+    const finalData = await finalResponse.json();
+    if (!isExecutionResponse(finalData)) {
+      return NextResponse.json(
+        { error: "Unexpected response type from final Judge0 execution" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(finalData);
+  } catch (error) {
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json(
+      { error: "An unknown error occurred" },
       { status: 500 }
     );
   }
