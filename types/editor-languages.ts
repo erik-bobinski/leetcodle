@@ -47,6 +47,24 @@ func main() {
   // Your code here
 }`
   },
+  typescript: {
+    name: "TypeScript",
+    extension: () => javascript({ typescript: true }),
+    boilerplate: `function solution(): void {
+  // Your code here
+}
+
+// TypeScript-specific features
+interface Example {
+  name: string;
+  value: number;
+}
+
+const example: Example = {
+  name: "test",
+  value: 42
+};`
+  },
   python: {
     name: "Python",
     extension: python,

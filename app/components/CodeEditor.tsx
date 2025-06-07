@@ -2,7 +2,7 @@
 
 import { createTheme } from "thememirror";
 import { tags as t } from "@lezer/highlight";
-import { EditorState } from "@codemirror/state";
+import { EditorState, StateEffect } from "@codemirror/state";
 import {
   EditorView,
   keymap,
@@ -30,8 +30,10 @@ import {
   closeBracketsKeymap
 } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
+import { indentWithTab } from "@codemirror/commands";
 import { languages } from "@/types/editor-languages";
 import { useState, useEffect, useRef } from "react";
+import { vim } from "@replit/codemirror-vim";
 
 const leetcodleTheme = createTheme({
   variant: "dark",
@@ -62,106 +64,141 @@ const leetcodleTheme = createTheme({
   ]
 });
 
+// Create a function to get all extensions
+const getExtensions = (lang: any, vimEnabled: boolean) => [
+  lang,
+  ...(vimEnabled ? [vim()] : []),
+  lineNumbers(),
+  foldGutter(),
+  highlightSpecialChars(),
+  history(),
+  drawSelection(),
+  dropCursor(),
+  EditorState.allowMultipleSelections.of(true),
+  indentOnInput(),
+  leetcodleTheme,
+  bracketMatching(),
+  closeBrackets(),
+  autocompletion(),
+  rectangularSelection(),
+  crosshairCursor(),
+  highlightActiveLine(),
+  highlightActiveLineGutter(),
+  highlightSelectionMatches(),
+  keymap.of([
+    ...closeBracketsKeymap,
+    ...defaultKeymap,
+    ...searchKeymap,
+    ...historyKeymap,
+    ...foldKeymap,
+    ...completionKeymap,
+    ...lintKeymap,
+    indentWithTab
+  ]),
+  EditorView.theme({
+    "&": {
+      height: "300px",
+      border: "1px solid #ddd",
+      borderRadius: "4px"
+    },
+    ".cm-content": {
+      fontFamily: "var(--font-mono)"
+    }
+  })
+];
+
 export default function CodeEditor() {
   const editorRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
   const [currentLang, setCurrentLang] = useState<keyof typeof languages>("cpp");
+  const [vimMode, setVimMode] = useState(false);
   const lang = languages[currentLang].extension();
 
   const getLangName = () => languages[currentLang].name;
 
+  // Initialize editor
   useEffect(() => {
-    if (!editorRef.current) return;
+    if (!editorRef.current || viewRef.current) return;
 
     const view = new EditorView({
       doc: languages[currentLang].boilerplate,
       parent: editorRef.current,
-      extensions: [
-        lang,
-        // A line number gutter
-        lineNumbers(),
-        // A gutter with code folding markers
-        foldGutter(),
-        // Replace non-printable characters with placeholders
-        highlightSpecialChars(),
-        // The undo history
-        history(),
-        // Replace native cursor/selection with our own
-        drawSelection(),
-        // Show a drop cursor when dragging over the editor
-        dropCursor(),
-        // Allow multiple cursors/selections
-        EditorState.allowMultipleSelections.of(true),
-        // Re-indent lines when typing specific input
-        indentOnInput(),
-        // Use our custom theme
-        leetcodleTheme,
-        // Highlight matching brackets near cursor
-        bracketMatching(),
-        // Automatically close brackets
-        closeBrackets(),
-        // Load the autocompletion system
-        autocompletion(),
-        // Allow alt-drag to select rectangular regions
-        rectangularSelection(),
-        // Change the cursor to a crosshair when holding alt
-        crosshairCursor(),
-        // Style the current line specially
-        highlightActiveLine(),
-        // Style the gutter for current line specially
-        highlightActiveLineGutter(),
-        // Highlight text that matches the selected text
-        highlightSelectionMatches(),
-        keymap.of([
-          // Closed-brackets aware backspace
-          ...closeBracketsKeymap,
-          // A large set of basic bindings
-          ...defaultKeymap,
-          // Search-related keys
-          ...searchKeymap,
-          // Redo/undo keys
-          ...historyKeymap,
-          // Code folding bindings
-          ...foldKeymap,
-          // Autocompletion keys
-          ...completionKeymap,
-          // Keys related to the linter system
-          ...lintKeymap
-        ]),
-        EditorView.theme({
-          "&": {
-            height: "300px",
-            border: "1px solid #ddd",
-            borderRadius: "4px"
-          },
-          ".cm-content": {
-            fontFamily: "var(--font-mono)"
-          }
-        })
-      ]
+      extensions: getExtensions(lang, vimMode)
     });
 
-    view.focus(); // Focus the editor on mount
+    viewRef.current = view;
+    view.focus();
 
     return () => {
       view.destroy();
+      viewRef.current = null;
     };
-  }, [lang]);
+  }, []); // Only run on mount
+
+  // Handle language changes
+  useEffect(() => {
+    if (!viewRef.current) return;
+
+    const view = viewRef.current;
+    const newDoc = languages[currentLang].boilerplate;
+
+    // Update the document content
+    view.dispatch({
+      changes: {
+        from: 0,
+        to: view.state.doc.length,
+        insert: newDoc
+      }
+    });
+
+    // Update language support
+    view.dispatch({
+      effects: StateEffect.reconfigure.of(getExtensions(lang, vimMode))
+    });
+  }, [currentLang, lang]);
+
+  // Handle vim mode changes
+  useEffect(() => {
+    if (!viewRef.current) return;
+
+    const view = viewRef.current;
+    view.dispatch({
+      effects: StateEffect.reconfigure.of(getExtensions(lang, vimMode))
+    });
+
+    // Focus the editor after a brief delay to ensure the reconfiguration is complete
+    setTimeout(() => {
+      view.focus();
+    }, 0);
+  }, [vimMode, lang]);
 
   return (
     <div className="w-full">
-      <select
-        value={currentLang}
-        onChange={(e) =>
-          setCurrentLang(e.target.value as keyof typeof languages)
-        }
-        className="mb-2 p-1 rounded bg-[#1b222c] text-[#a6accd] border border-[#2d3a4e]"
-      >
-        {Object.entries(languages).map(([key, lang]) => (
-          <option key={key} value={key}>
-            {lang.name}
-          </option>
-        ))}
-      </select>
+      <div className="flex gap-2 mb-2">
+        <select
+          value={currentLang}
+          onChange={(e) =>
+            setCurrentLang(e.target.value as keyof typeof languages)
+          }
+          className="p-1 rounded bg-[#1b222c] text-[#a6accd] border border-[#2d3a4e] cursor-pointer hover:bg-[#222b3c] hover:border-[#4b526d] transition-colors"
+        >
+          {Object.entries(languages).map(([key, lang]) => (
+            <option key={key} value={key}>
+              {lang.name}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => setVimMode(!vimMode)}
+          className={`px-2 py-1 rounded border cursor-pointer transition-colors ${
+            vimMode
+              ? "bg-[#2d3a4e] text-[#a6accd] border-[#4b526d] hover:bg-[#364458] hover:border-[#5c6370]"
+              : "bg-[#1b222c] text-[#a6accd] border-[#2d3a4e] hover:bg-[#222b3c] hover:border-[#4b526d]"
+          }`}
+        >
+          {vimMode ? "Vim Mode: On" : "Vim Mode: Off"}
+        </button>
+      </div>
       <div ref={editorRef} />
     </div>
   );
