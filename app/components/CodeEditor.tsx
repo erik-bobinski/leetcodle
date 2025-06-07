@@ -1,3 +1,9 @@
+/*TODO: 
+  add accessibility warning about editor's tab key interfering
+  with its normal function of page navigation
+  https://codemirror.net/examples/tab/
+*/
+
 "use client";
 
 import { createTheme } from "thememirror";
@@ -34,6 +40,7 @@ import { indentWithTab } from "@codemirror/commands";
 import { languages } from "@/types/editor-languages";
 import { useState, useEffect, useRef } from "react";
 import { vim } from "@replit/codemirror-vim";
+import { LanguageSupport } from "@codemirror/language";
 
 const leetcodleTheme = createTheme({
   variant: "dark",
@@ -64,8 +71,7 @@ const leetcodleTheme = createTheme({
   ]
 });
 
-// Create a function to get all extensions
-const getExtensions = (lang: any, vimEnabled: boolean) => [
+const getExtensions = (lang: LanguageSupport, vimEnabled: boolean) => [
   lang,
   ...(vimEnabled ? [vim()] : []),
   lineNumbers(),
@@ -114,9 +120,7 @@ export default function CodeEditor() {
   const [vimMode, setVimMode] = useState(false);
   const lang = languages[currentLang].extension();
 
-  const getLangName = () => languages[currentLang].name;
-
-  // Initialize editor
+  // init the editor
   useEffect(() => {
     if (!editorRef.current || viewRef.current) return;
 
@@ -133,16 +137,16 @@ export default function CodeEditor() {
       view.destroy();
       viewRef.current = null;
     };
-  }, []); // Only run on mount
+  }, []); // only run on mount
 
-  // Handle language changes
+  // handle language changes
   useEffect(() => {
     if (!viewRef.current) return;
 
     const view = viewRef.current;
     const newDoc = languages[currentLang].boilerplate;
 
-    // Update the document content
+    // update the document content
     view.dispatch({
       changes: {
         from: 0,
@@ -151,13 +155,13 @@ export default function CodeEditor() {
       }
     });
 
-    // Update language support
+    // update language support
     view.dispatch({
       effects: StateEffect.reconfigure.of(getExtensions(lang, vimMode))
     });
   }, [currentLang, lang]);
 
-  // Handle vim mode changes
+  // handle vim mode changes
   useEffect(() => {
     if (!viewRef.current) return;
 
@@ -166,10 +170,7 @@ export default function CodeEditor() {
       effects: StateEffect.reconfigure.of(getExtensions(lang, vimMode))
     });
 
-    // Focus the editor after a brief delay to ensure the reconfiguration is complete
-    setTimeout(() => {
-      view.focus();
-    }, 0);
+    view.focus();
   }, [vimMode, lang]);
 
   return (

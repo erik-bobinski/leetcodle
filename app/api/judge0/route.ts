@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import type {
-  Judge0Response,
   Judge0CodeSubmission,
   Judge0SubmissionResponse,
   Judge0ExecutionResponse
