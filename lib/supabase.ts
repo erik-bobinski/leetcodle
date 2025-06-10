@@ -11,7 +11,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Types for our editor preferences
 export type EditorPreferences = {
-  id: string;
   device_id: string | null;
   user_id: string | null;
   theme: string | null;
@@ -20,8 +19,6 @@ export type EditorPreferences = {
   line_numbers: boolean | null;
   vim_mode: boolean | null;
   language: string | null;
-  created_at: string;
-  updated_at: string;
 };
 
 // Type for creating/updating preferences (omits auto-generated fields)

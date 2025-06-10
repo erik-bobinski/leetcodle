@@ -74,9 +74,24 @@ const leetcodleTheme = createTheme({
   ]
 });
 
+const defaultPreferences = {
+  device_id: null,
+  user_id: null,
+  theme: null,
+  font_size: null,
+  tab_size: null,
+  line_numbers: true,
+  vim_mode: false,
+  language: "cpp"
+};
+
 export default function CodeEditor() {
+  // ref to codemirror view's container
   const editorRef = useRef<HTMLDivElement>(null);
+
+  // ref to the codemirror view object
   const viewRef = useRef<EditorView | null>(null);
+
   const [langKeyState, setLangKeyState] =
     useState<keyof typeof languages>("cpp");
   const [vimState, setVimState] = useState(false);
@@ -100,6 +115,8 @@ export default function CodeEditor() {
         if (prefsFromDB.vim_mode !== null) {
           setVimState(prefsFromDB.vim_mode);
         }
+      } else {
+        setPreferencesState(defaultPreferences);
       }
     }
 
@@ -173,12 +190,7 @@ export default function CodeEditor() {
 
     viewRef.current = view;
     view.focus();
-
-    return () => {
-      view.destroy();
-      viewRef.current = null;
-    };
-  }, [preferencesState]); // Re-initialize when preferences change
+  }, [preferencesState !== null]); // re-init when prefs are set
 
   // handle client-side editor config changes
   // i.e. lang selector, vim toggle
@@ -203,6 +215,7 @@ export default function CodeEditor() {
     view.focus();
   }, [langKeyState, vimState]);
 
+  // initial loading state
   if (preferencesState === null) {
     return (
       <div className="w-full flex flex-col gap-2">
