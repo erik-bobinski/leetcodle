@@ -23,6 +23,7 @@
     "@codemirror/view": "^6.37.1",
     "@lezer/highlight": "^1.2.1",
     "@replit/codemirror-vim": "^6.3.0",
+    "@supabase/supabase-js": "^2.50.0",
     "codemirror": "^6.0.1",
     "next": "15.3.2",
     "react": "^19.0.0",

@@ -1,6 +1,6 @@
 /*TODO: 
-  add accessibility warning about editor's tab key interfering
-  with its normal function of page navigation
+  add accessibility warning about editor's tab key 
+  interfering with its normal function of page navigation
   https://codemirror.net/examples/tab/
 */
 
@@ -41,6 +41,9 @@ import { languages } from "@/types/editor-languages";
 import { useState, useEffect, useRef } from "react";
 import { vim } from "@replit/codemirror-vim";
 import { LanguageSupport } from "@codemirror/language";
+import type { EditorPreferences } from "@/lib/supabase";
+import { getPreferences } from "../actions/get-preferences";
+import { getDeviceId } from "@/lib/editor-preferences";
 
 const leetcodleTheme = createTheme({
   variant: "dark",
@@ -71,63 +74,101 @@ const leetcodleTheme = createTheme({
   ]
 });
 
-const getExtensions = (lang: LanguageSupport, vimEnabled: boolean) => [
-  lang,
-  ...(vimEnabled ? [vim()] : []),
-  lineNumbers(),
-  foldGutter(),
-  highlightSpecialChars(),
-  history(),
-  drawSelection(),
-  dropCursor(),
-  EditorState.allowMultipleSelections.of(true),
-  indentOnInput(),
-  leetcodleTheme,
-  bracketMatching(),
-  closeBrackets(),
-  autocompletion(),
-  rectangularSelection(),
-  crosshairCursor(),
-  highlightActiveLine(),
-  highlightActiveLineGutter(),
-  highlightSelectionMatches(),
-  keymap.of([
-    ...closeBracketsKeymap,
-    ...defaultKeymap,
-    ...searchKeymap,
-    ...historyKeymap,
-    ...foldKeymap,
-    ...completionKeymap,
-    ...lintKeymap,
-    indentWithTab
-  ]),
-  EditorView.theme({
-    "&": {
-      height: "300px",
-      border: "1px solid #ddd",
-      borderRadius: "4px"
-    },
-    ".cm-content": {
-      fontFamily: "var(--font-mono)"
-    }
-  })
-];
-
 export default function CodeEditor() {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
-  const [currentLang, setCurrentLang] = useState<keyof typeof languages>("cpp");
-  const [vimMode, setVimMode] = useState(false);
-  const lang = languages[currentLang].extension();
+  const [langKeyState, setLangKeyState] =
+    useState<keyof typeof languages>("cpp");
+  const [vimState, setVimState] = useState(false);
+  const [preferencesState, setPreferencesState] =
+    useState<EditorPreferences | null>(null);
+  const languageExtension = languages[langKeyState].extension();
+
+  // work to do after initial render
+  useEffect(() => {
+    async function fetchPreferences() {
+      const deviceId = getDeviceId();
+      const prefsFromDB = await getPreferences(deviceId);
+
+      // update react state to reflect any stored prefs
+      if (prefsFromDB) {
+        setPreferencesState(prefsFromDB);
+
+        if (prefsFromDB.language && prefsFromDB.language in languages) {
+          setLangKeyState(prefsFromDB.language as keyof typeof languages);
+        }
+        if (prefsFromDB.vim_mode !== null) {
+          setVimState(prefsFromDB.vim_mode);
+        }
+      }
+    }
+
+    fetchPreferences();
+  }, []);
+
+  // helper to update editor config
+  function refreshExtensions(lang: LanguageSupport) {
+    return [
+      lang,
+      ...(vimState ? [vim()] : []),
+      // Only add lineNumbers if enabled in preferences
+      ...(preferencesState?.line_numbers !== false ? [lineNumbers()] : []),
+      foldGutter(),
+      highlightSpecialChars(),
+      history(),
+      drawSelection(),
+      dropCursor(),
+      EditorState.allowMultipleSelections.of(true),
+      indentOnInput(),
+      leetcodleTheme,
+      bracketMatching(),
+      closeBrackets(),
+      autocompletion(),
+      rectangularSelection(),
+      crosshairCursor(),
+      highlightActiveLine(),
+      highlightActiveLineGutter(),
+      highlightSelectionMatches(),
+      keymap.of([
+        ...closeBracketsKeymap,
+        ...defaultKeymap,
+        ...searchKeymap,
+        ...historyKeymap,
+        ...foldKeymap,
+        ...completionKeymap,
+        ...lintKeymap,
+        indentWithTab
+      ]),
+      EditorView.theme({
+        "&": {
+          height: "300px",
+          border: "1px solid #ddd",
+          borderRadius: "4px"
+        },
+        ".cm-content": {
+          fontFamily: "var(--font-mono)",
+          fontSize: preferencesState?.font_size
+            ? `${preferencesState.font_size}px`
+            : null
+        },
+        ".cm-tab": {
+          // Set tab size based on preferences
+          width: preferencesState?.tab_size
+            ? `${preferencesState.tab_size}ch`
+            : null
+        }
+      })
+    ];
+  }
 
   // init the editor
   useEffect(() => {
     if (!editorRef.current || viewRef.current) return;
 
     const view = new EditorView({
-      doc: languages[currentLang].boilerplate,
+      doc: languages[langKeyState].boilerplate,
       parent: editorRef.current,
-      extensions: getExtensions(lang, vimMode)
+      extensions: refreshExtensions(languageExtension)
     });
 
     viewRef.current = view;
@@ -137,16 +178,16 @@ export default function CodeEditor() {
       view.destroy();
       viewRef.current = null;
     };
-  }, []); // only run on mount
+  }, [preferencesState]); // Re-initialize when preferences change
 
-  // handle language changes
+  // handle client-side editor config changes
+  // i.e. lang selector, vim toggle
   useEffect(() => {
     if (!viewRef.current) return;
 
     const view = viewRef.current;
-    const newDoc = languages[currentLang].boilerplate;
+    const newDoc = languages[langKeyState].boilerplate;
 
-    // update the document content
     view.dispatch({
       changes: {
         from: 0,
@@ -155,31 +196,44 @@ export default function CodeEditor() {
       }
     });
 
-    // update language support
     view.dispatch({
-      effects: StateEffect.reconfigure.of(getExtensions(lang, vimMode))
-    });
-  }, [currentLang, lang]);
-
-  // handle vim mode changes
-  useEffect(() => {
-    if (!viewRef.current) return;
-
-    const view = viewRef.current;
-    view.dispatch({
-      effects: StateEffect.reconfigure.of(getExtensions(lang, vimMode))
+      effects: StateEffect.reconfigure.of(refreshExtensions(languageExtension))
     });
 
     view.focus();
-  }, [vimMode, lang]);
+  }, [langKeyState, vimState]);
+
+  if (preferencesState === null) {
+    return (
+      <div className="w-full flex flex-col gap-2">
+        <div className="flex gap-2 mb-2">
+          <div
+            className="h-8 w-32 rounded shimmer"
+            style={{ backgroundColor: "#1b222c" }}
+          />
+          <div
+            className="h-8 w-24 rounded shimmer"
+            style={{ backgroundColor: "#1b222c" }}
+          />
+        </div>
+        <div
+          className="w-full h-[300px] rounded border border-[#222b3c] shimmer"
+          style={{
+            backgroundColor: "#1b222c",
+            boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)"
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
       <div className="flex gap-2 mb-2">
         <select
-          value={currentLang}
+          value={langKeyState}
           onChange={(e) =>
-            setCurrentLang(e.target.value as keyof typeof languages)
+            setLangKeyState(e.target.value as keyof typeof languages)
           }
           className="p-1 rounded bg-[#1b222c] text-[#a6accd] border border-[#2d3a4e] cursor-pointer hover:bg-[#222b3c] hover:border-[#4b526d] transition-colors"
         >
@@ -190,14 +244,14 @@ export default function CodeEditor() {
           ))}
         </select>
         <button
-          onClick={() => setVimMode(!vimMode)}
+          onClick={() => setVimState(!vimState)}
           className={`px-2 py-1 rounded border cursor-pointer transition-colors ${
-            vimMode
+            vimState
               ? "bg-[#2d3a4e] text-[#a6accd] border-[#4b526d] hover:bg-[#364458] hover:border-[#5c6370]"
               : "bg-[#1b222c] text-[#a6accd] border-[#2d3a4e] hover:bg-[#222b3c] hover:border-[#4b526d]"
           }`}
         >
-          {vimMode ? "Vim Mode: On" : "Vim Mode: Off"}
+          {vimState ? "Vim Mode: On" : "Vim Mode: Off"}
         </button>
       </div>
       <div ref={editorRef} />
