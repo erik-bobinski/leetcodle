@@ -1,22 +1,32 @@
 "use server";
 
 import { supabase } from "@/lib/supabase";
-import type { EditorPreferences } from "@/lib/supabase";
+import type { User } from "@/lib/supabase";
+import { auth } from "@clerk/nextjs/server";
 
-export async function getPreferences(
-  deviceId: string
-): Promise<EditorPreferences | null> {
-  const { data, error } = await supabase
-    .from("editor_preferences")
-    .select("*")
-    .eq("device_id", deviceId)
-    .single();
+export async function getUser(): Promise<User | null> {
+  try {
+    const { userId } = await auth();
 
-  if (error || !data) {
-    console.error(`Error occurred or no data returned: 
-        Error: ${error},
-        ===============================
-        Data: ${data}`);
+    if (!userId) {
+      console.error("No authenticated user found");
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (error) {
+      console.error("Database error:", error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in getUser:", error);
+    return null;
   }
-  return data;
 }

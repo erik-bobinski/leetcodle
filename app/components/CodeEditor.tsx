@@ -41,9 +41,8 @@ import { languages } from "@/types/editor-languages";
 import { useState, useEffect, useRef } from "react";
 import { vim } from "@replit/codemirror-vim";
 import { LanguageSupport } from "@codemirror/language";
-import type { EditorPreferences } from "@/lib/supabase";
-import { getPreferences } from "../actions/get-preferences";
-import { getDeviceId } from "@/lib/editor-preferences";
+import type { User } from "@/lib/supabase";
+import { getUser } from "../actions/get-preferences";
 
 const leetcodleTheme = createTheme({
   variant: "dark",
@@ -75,7 +74,6 @@ const leetcodleTheme = createTheme({
 });
 
 const defaultPreferences = {
-  device_id: null,
   user_id: null,
   theme: null,
   font_size: null,
@@ -95,15 +93,13 @@ export default function CodeEditor() {
   const [langKeyState, setLangKeyState] =
     useState<keyof typeof languages>("cpp");
   const [vimState, setVimState] = useState(false);
-  const [preferencesState, setPreferencesState] =
-    useState<EditorPreferences | null>(null);
+  const [preferencesState, setPreferencesState] = useState<User | null>(null);
   const languageExtension = languages[langKeyState].extension();
 
   // work to do after initial render
   useEffect(() => {
     async function fetchPreferences() {
-      const deviceId = getDeviceId();
-      const prefsFromDB = await getPreferences(deviceId);
+      const prefsFromDB = await getUser();
 
       // update react state to reflect any stored prefs
       if (prefsFromDB) {

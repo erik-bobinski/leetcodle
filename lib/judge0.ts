@@ -1,5 +1,3 @@
-//TODO: instead of string type as error, return Judge0ErrorResponse?
-
 import {
   Judge0ExecutionResponse,
   Judge0SubmissionResponse
