@@ -37,6 +37,7 @@ import {
 } from "@codemirror/autocomplete";
 import { lintKeymap } from "@codemirror/lint";
 import { indentWithTab } from "@codemirror/commands";
+import { indentUnit } from "@codemirror/language";
 import { languages } from "@/types/editor-languages";
 import { useState, useEffect, useRef } from "react";
 import { vim } from "@replit/codemirror-vim";
@@ -95,6 +96,7 @@ export default function CodeEditor() {
   const [vimState, setVimState] = useState(false);
   const [preferencesState, setPreferencesState] = useState<User | null>(null);
   const languageExtension = languages[langKeyState].extension();
+  const [tabState, setTabState] = useState(indentUnit.of("  "));
 
   // work to do after initial render
   useEffect(() => {
@@ -110,6 +112,9 @@ export default function CodeEditor() {
         }
         if (prefsFromDB.vim_mode !== null) {
           setVimState(prefsFromDB.vim_mode);
+        }
+        if (prefsFromDB.tab_size !== null && prefsFromDB.tab_size !== 2) {
+          setTabState(indentUnit.of(" ".repeat(prefsFromDB.tab_size)));
         }
       } else {
         setPreferencesState(defaultPreferences);
@@ -142,6 +147,7 @@ export default function CodeEditor() {
       highlightActiveLine(),
       highlightActiveLineGutter(),
       highlightSelectionMatches(),
+      tabState,
       keymap.of([
         ...closeBracketsKeymap,
         ...defaultKeymap,
@@ -209,7 +215,7 @@ export default function CodeEditor() {
     });
 
     view.focus();
-  }, [langKeyState, vimState]);
+  }, [langKeyState, vimState, tabState]);
 
   // initial loading state
   if (preferencesState === null) {

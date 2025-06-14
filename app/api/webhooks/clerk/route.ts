@@ -116,19 +116,15 @@ export async function POST(req: Request) {
 
     console.log(`User updated in Supabase: ${id}`);
     return new Response("User updated", { status: 200 });
+  } else if (eventType === "user.deleted") {
+    const { id } = payload.data;
+    const { error } = await supabase.from("users").delete().eq("user_id", id);
+    if (error) {
+      console.error("Error deleting user from Supabase: ", error);
+    }
+    console.log("User deleted from Supabase: ", id);
+    return new Response("User deleted", { status: 200 });
   }
-
-  // You might also want to handle 'user.deleted'
-  // if (eventType === "user.deleted") {
-  //   const { id } = payload.data;
-  //   const { error } = await supabase.from("users").delete().eq("user_id", id);
-  //   if (error) {
-  //     console.error("Error deleting user from Supabase:", error);
-  //     return new Response("Failed to delete user", { status: 500 });
-  //   }
-  //   console.log(`User deleted from Supabase: ${id}`);
-  //   return new Response("User deleted", { status: 200 });
-  // }
 
   console.log(`⚠️ Unhandled event type: ${eventType}`);
   return new Response("Unhandled event type", { status: 200 });
