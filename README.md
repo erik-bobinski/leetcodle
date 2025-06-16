@@ -1,4 +1,28 @@
+# Leetcodle
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Authentication Flow
+
+This application uses a custom authentication flow with Clerk and Supabase:
+
+1. **Sign-in Process**: When a user attempts to sign in with email/password, the system first validates that the user exists in the Supabase database before allowing Clerk authentication.
+2. **Social Login**: Users can sign in with Google or GitHub OAuth providers directly through Clerk.
+3. **Sign-up Process**: New users are created through Clerk and automatically added to the Supabase database via webhooks.
+4. **User Validation**: The `/api/auth/validate-user` endpoint checks if a user exists in the database before allowing email/password sign-in.
+
+### Key Components:
+
+- Custom sign-in page (`app/sign-in/[[...sign-in]]/page.tsx`) with email/password and social login options
+- Custom sign-up page (`app/sign-up/[[...sign-up]]/page.tsx`) with email/password and social login options
+- User validation API (`app/api/auth/validate-user/route.ts`)
+- Clerk webhook handler (`app/api/webhooks/clerk/route.ts`)
+
+### Authentication Methods:
+
+- **Email/Password**: Validated against your database before allowing sign-in
+- **Google OAuth**: Direct integration with Google authentication
+- **GitHub OAuth**: Direct integration with GitHub authentication
 
 ## Getting Started
 

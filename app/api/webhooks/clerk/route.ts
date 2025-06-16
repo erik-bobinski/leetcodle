@@ -31,8 +31,7 @@ export async function POST(req: Request) {
   const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  // Create a new Svix instance with your secret.
-  // Make sure this is set in your .env.local file as CLERK_WEBHOOK_SECRET
+  // Create a new Svix instance with your secret
   const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET!);
 
   let evt: WebhookEvent;
@@ -63,8 +62,6 @@ export async function POST(req: Request) {
     console.log(`👤 User created event received for user ID: ${id}`);
     console.log(`📧 Email: ${email_addresses?.[0]?.email_address}`);
     console.log(`👤 Username: ${username}`);
-
-    //TODO: Log the full payload to see available fields
     console.log(
       "Clerk webhook payload:",
       JSON.stringify(payload.data, null, 2)
@@ -72,15 +69,10 @@ export async function POST(req: Request) {
 
     // Insert into your 'users' table
     const { data, error } = await supabase.from("users").insert({
-      user_id: id, // Clerk user ID
-      // You can add other fields from the Clerk payload if they exist and you want to store them
-      // For example, if you want to store their email:
-      // email: email_addresses[0]?.email_address,
-      // name: `${first_name || ''} ${last_name || ''}`.trim(),
-      // Add default values for settings
+      user_id: id,
       email: email_addresses[0]?.email_address,
       username,
-      theme: null, // or 'light'
+      theme: null,
       font_size: 14,
       tab_size: 2,
       line_numbers: true,
@@ -96,18 +88,32 @@ export async function POST(req: Request) {
     console.log(`User created in Supabase with user_id: ${id}`);
     return new Response("User created", { status: 200 });
   } else if (eventType === "user.updated") {
-    const { id, email_addresses, first_name, last_name, image_url } =
-      payload.data;
+    const {
+      id,
+      email_addresses,
+      username,
+      theme,
+      font_size,
+      tab_size,
+      line_numbers,
+      vim_mode,
+      language
+    } = payload.data;
 
     // Update the user record in your 'users' table
     const { data, error } = await supabase
       .from("users")
       .update({
-        // email: email_addresses[0]?.email_address,
-        // name: `${first_name || ''} ${last_name || ''}`.trim(),
-        updated_at: new Date().toISOString()
+        email: email_addresses?.[0]?.email_address,
+        username,
+        theme,
+        font_size,
+        tab_size,
+        line_numbers,
+        vim_mode,
+        language
       })
-      .eq("user_id", id); // Match by Clerk user ID
+      .eq("user_id", id);
 
     if (error) {
       console.error("Error updating user in Supabase:", error);
@@ -121,11 +127,12 @@ export async function POST(req: Request) {
     const { error } = await supabase.from("users").delete().eq("user_id", id);
     if (error) {
       console.error("Error deleting user from Supabase: ", error);
+      return new Response("Error deleting user from Supabase", { status: 500 });
     }
     console.log("User deleted from Supabase: ", id);
     return new Response("User deleted", { status: 200 });
   }
 
   console.log(`⚠️ Unhandled event type: ${eventType}`);
-  return new Response("Unhandled event type", { status: 200 });
+  return new Response("Unhandled event type", { status: 500 });
 }

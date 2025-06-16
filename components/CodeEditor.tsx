@@ -43,7 +43,7 @@ import { useState, useEffect, useRef } from "react";
 import { vim } from "@replit/codemirror-vim";
 import { LanguageSupport } from "@codemirror/language";
 import type { User } from "@/lib/supabase";
-import { getUser } from "../actions/get-preferences";
+import { getUser } from "../app/actions/get-preferences";
 
 const leetcodleTheme = createTheme({
   variant: "dark",

@@ -1,63 +1,45 @@
 "use client";
 
 import { useState } from "react";
-import { useSignIn } from "@clerk/nextjs";
+import { useSignUp } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
-export default function SignInPage() {
+export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, setActive } = useSignIn();
+  const { signUp, setActive } = useSignUp();
   const router = useRouter();
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      // First, check if user exists in our database
-      const response = await fetch("/api/auth/validate-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(
-          errorData.error ||
-            "User not found. Please check your credentials or sign up for a new account."
-        );
+      if (!signUp) {
+        setError("Sign-up service not available. Please try again.");
         setIsLoading(false);
         return;
       }
 
-      // If user exists in our database, proceed with Clerk sign-in
-      if (!signIn) {
-        setError("Sign-in service not available. Please try again.");
-        setIsLoading(false);
-        return;
-      }
-
-      const result = await signIn.create({
-        identifier: email,
-        password
+      // Start the sign-up process with Clerk
+      const result = await signUp.create({
+        emailAddress: email,
+        password,
+        username
       });
 
-      if (result?.status === "complete") {
+      if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
         router.push("/");
-      } else if (result?.status === "needs_first_factor") {
-        setError(
-          "Please check your email for verification or complete additional authentication steps."
-        );
+      } else if (result.status === "missing_requirements") {
+        // Handle any additional requirements (like email verification)
+        setError("Please check your email to verify your account.");
       } else {
-        setError("Invalid credentials. Please check your email and password.");
+        setError("An error occurred during sign-up. Please try again.");
       }
     } catch (err: any) {
       if (err.errors?.[0]?.message) {
@@ -65,53 +47,53 @@ export default function SignInPage() {
       } else {
         setError("An error occurred. Please try again.");
       }
-      console.error("Sign-in error:", err);
+      console.error("Sign-up error:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignUp = async () => {
     try {
       setIsLoading(true);
       setError("");
 
-      if (!signIn) {
-        setError("Sign-in service not available. Please try again.");
+      if (!signUp) {
+        setError("Sign-up service not available. Please try again.");
         return;
       }
 
-      await signIn.authenticateWithRedirect({
+      await signUp.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/",
         redirectUrlComplete: "/"
       });
     } catch (err: any) {
-      setError("Google sign-in failed. Please try again.");
-      console.error("Google sign-in error:", err);
+      setError("Google sign-up failed. Please try again.");
+      console.error("Google sign-up error:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGithubSignIn = async () => {
+  const handleGithubSignUp = async () => {
     try {
       setIsLoading(true);
       setError("");
 
-      if (!signIn) {
-        setError("Sign-in service not available. Please try again.");
+      if (!signUp) {
+        setError("Sign-up service not available. Please try again.");
         return;
       }
 
-      await signIn.authenticateWithRedirect({
+      await signUp.authenticateWithRedirect({
         strategy: "oauth_github",
         redirectUrl: "/",
         redirectUrlComplete: "/"
       });
     } catch (err: any) {
-      setError("GitHub sign-in failed. Please try again.");
-      console.error("GitHub sign-in error:", err);
+      setError("GitHub sign-up failed. Please try again.");
+      console.error("GitHub sign-up error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -122,14 +104,14 @@ export default function SignInPage() {
       <div className="w-full max-w-md space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight">
-            Sign in to your account
+            Create your account
           </h2>
         </div>
 
         {/* Social Login Buttons */}
         <div className="space-y-3">
           <button
-            onClick={handleGoogleSignIn}
+            onClick={handleGoogleSignUp}
             disabled={isLoading}
             className="group relative flex w-full justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
@@ -155,7 +137,7 @@ export default function SignInPage() {
           </button>
 
           <button
-            onClick={handleGithubSignIn}
+            onClick={handleGithubSignUp}
             disabled={isLoading}
             className="group relative flex w-full justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
@@ -181,7 +163,7 @@ export default function SignInPage() {
           </div>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleEmailSignIn}>
+        <form className="mt-8 space-y-6" onSubmit={handleEmailSignUp}>
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium">
@@ -200,6 +182,22 @@ export default function SignInPage() {
               />
             </div>
             <div>
+              <label htmlFor="username" className="block text-sm font-medium">
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                placeholder="Choose a username"
+              />
+            </div>
+            <div>
               <label htmlFor="password" className="block text-sm font-medium">
                 Password
               </label>
@@ -207,12 +205,12 @@ export default function SignInPage() {
                 id="password"
                 name="password"
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                placeholder="Enter your password"
+                placeholder="Create a password"
               />
             </div>
           </div>
@@ -229,7 +227,7 @@ export default function SignInPage() {
               disabled={isLoading}
               className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              {isLoading ? "Signing in..." : "Sign in with email"}
+              {isLoading ? "Creating account..." : "Sign up with email"}
             </button>
           </div>
         </form>
