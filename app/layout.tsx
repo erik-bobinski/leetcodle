@@ -43,7 +43,7 @@ export default function RootLayout({
     >
       <html lang="en" suppressHydrationWarning>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           suppressHydrationWarning
         >
           <ThemeProvider
@@ -52,7 +52,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <header className="flex justify-end items-center p-4 gap-4 h-16">
+            <header className="flex h-16 items-center justify-end gap-4 p-4">
               <ModeToggle />
               <SignedOut>
                 <SignInButton />

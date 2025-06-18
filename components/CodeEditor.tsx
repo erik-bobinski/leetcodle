@@ -220,19 +220,19 @@ export default function CodeEditor() {
   // initial loading state
   if (preferencesState === null) {
     return (
-      <div className="w-full flex flex-col gap-2">
-        <div className="flex gap-2 mb-2">
+      <div className="flex w-full flex-col gap-2">
+        <div className="mb-2 flex gap-2">
           <div
-            className="h-8 w-32 rounded shimmer"
+            className="shimmer h-8 w-32 rounded"
             style={{ backgroundColor: "#1b222c" }}
           />
           <div
-            className="h-8 w-24 rounded shimmer"
+            className="shimmer h-8 w-24 rounded"
             style={{ backgroundColor: "#1b222c" }}
           />
         </div>
         <div
-          className="w-full h-[300px] rounded border border-[#222b3c] shimmer"
+          className="shimmer h-[300px] w-full rounded border border-[#222b3c]"
           style={{
             backgroundColor: "#1b222c",
             boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)"
@@ -244,13 +244,13 @@ export default function CodeEditor() {
 
   return (
     <div className="w-full">
-      <div className="flex gap-2 mb-2">
+      <div className="mb-2 flex gap-2">
         <select
           value={langKeyState}
           onChange={(e) =>
             setLangKeyState(e.target.value as keyof typeof languages)
           }
-          className="p-1 rounded bg-[#1b222c] text-[#a6accd] border border-[#2d3a4e] cursor-pointer hover:bg-[#222b3c] hover:border-[#4b526d] transition-colors"
+          className="cursor-pointer rounded border border-[#2d3a4e] bg-[#1b222c] p-1 text-[#a6accd] transition-colors hover:border-[#4b526d] hover:bg-[#222b3c]"
         >
           {Object.entries(languages).map(([key, lang]) => (
             <option key={key} value={key}>
@@ -260,10 +260,10 @@ export default function CodeEditor() {
         </select>
         <button
           onClick={() => setVimState(!vimState)}
-          className={`px-2 py-1 rounded border cursor-pointer transition-colors ${
+          className={`cursor-pointer rounded border px-2 py-1 transition-colors ${
             vimState
-              ? "bg-[#2d3a4e] text-[#a6accd] border-[#4b526d] hover:bg-[#364458] hover:border-[#5c6370]"
-              : "bg-[#1b222c] text-[#a6accd] border-[#2d3a4e] hover:bg-[#222b3c] hover:border-[#4b526d]"
+              ? "border-[#4b526d] bg-[#2d3a4e] text-[#a6accd] hover:border-[#5c6370] hover:bg-[#364458]"
+              : "border-[#2d3a4e] bg-[#1b222c] text-[#a6accd] hover:border-[#4b526d] hover:bg-[#222b3c]"
           }`}
         >
           {vimState ? "Vim Mode: On" : "Vim Mode: Off"}

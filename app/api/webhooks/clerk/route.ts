@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     );
 
     // Insert into your 'users' table
-    const { data, error } = await supabase.from("users").insert({
+    const { error } = await supabase.from("users").insert({
       user_id: id,
       email: email_addresses[0]?.email_address,
       username,
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
     } = payload.data;
 
     // Update the user record in your 'users' table
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("users")
       .update({
         email: email_addresses?.[0]?.email_address,

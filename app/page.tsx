@@ -1,4 +1,5 @@
 import CodeEditor from "../components/CodeEditor";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
           <CodeEditor />
         </section>
       </div>
+      <Button>Click me</Button>
     </main>
   );
 }
