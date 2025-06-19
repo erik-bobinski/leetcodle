@@ -266,7 +266,7 @@ export default function CodeEditor() {
               : "border-[#2d3a4e] bg-[#1b222c] text-[#a6accd] hover:border-[#4b526d] hover:bg-[#222b3c]"
           }`}
         >
-          {vimState ? "Vim Mode: On" : "Vim Mode: Off"}
+          {vimState ? "Vim: On" : "Vim: Off"}
         </button>
       </div>
       <div ref={editorRef} />

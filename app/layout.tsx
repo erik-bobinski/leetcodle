@@ -11,6 +11,8 @@ import {
 } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/ui/ModeToggle";
+import { Button } from "@/components/ui/button";
+import { GearIcon } from "@radix-ui/react-icons";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,6 +55,10 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <header className="flex h-16 items-center justify-end gap-4 p-4">
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <GearIcon className="h-5 w-5" />
+                <span className="sr-only">Settings</span>
+              </Button>
               <ModeToggle />
               <SignedOut>
                 <SignInButton />
