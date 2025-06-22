@@ -160,7 +160,7 @@ export default function CodeEditor() {
       ]),
       EditorView.theme({
         "&": {
-          height: "300px",
+          height: "400px",
           border: "1px solid #ddd",
           borderRadius: "4px"
         },
