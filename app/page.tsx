@@ -38,27 +38,10 @@ export default function Home() {
             </div>
           </div>
         </header>
-
-        {/* <div className="flex h-16 items-center justify-end gap-4 p-4">
-          <Button variant="outline" size="icon" className="h-9 w-9">
-            <GearIcon className="h-5 w-5" />
-            <span className="sr-only">Settings</span>
-          </Button>
-          <ModeToggle />
-          <SignedOut>
-            <SignInButton />
-            <SignUpButton />
-          </SignedOut>
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
-        </div> */}
-
         <section className="space-y-6">
           <CodeEditor />
         </section>
       </div>
-      <Button>Click me</Button>
     </main>
   );
 }
