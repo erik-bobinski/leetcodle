@@ -3,13 +3,7 @@
 import { supabase } from "@/lib/supabase";
 import { auth } from "@clerk/nextjs/server";
 
-export async function updatePreferences(preferences: {
-  language?: string;
-  vim_mode?: boolean;
-  tab_size?: number;
-  line_numbers?: boolean;
-  font_size?: number;
-}) {
+export async function updatePreferences(formData: FormData) {
   try {
     const { userId } = await auth();
 

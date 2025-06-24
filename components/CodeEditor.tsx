@@ -125,32 +125,6 @@ export default function CodeEditor() {
     fetchPreferences();
   }, []);
 
-  // Listen for storage events to sync settings changes
-  useEffect(() => {
-    const handleStorageChange = async () => {
-      const prefsFromDB = await getUser();
-      if (prefsFromDB) {
-        setPreferencesState(prefsFromDB);
-
-        if (prefsFromDB.language && prefsFromDB.language in languages) {
-          setLangKeyState(prefsFromDB.language as keyof typeof languages);
-        }
-        if (prefsFromDB.vim_mode !== null) {
-          setVimState(prefsFromDB.vim_mode);
-        }
-        if (prefsFromDB.tab_size !== null) {
-          setTabState(indentUnit.of(" ".repeat(prefsFromDB.tab_size)));
-        }
-        // Font size is handled directly in the theme configuration
-      }
-    };
-
-    // // Check for settings updates every 2 seconds when on the main page
-    // const interval = setInterval(handleStorageChange, 2000);
-
-    // return () => clearInterval(interval);
-  }, []);
-
   // helper to update editor config
   function refreshExtensions(lang: LanguageSupport) {
     return [

@@ -11,7 +11,6 @@ export const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 // Types for our editor preferences
 export type User = {
-  user_id: string | null;
   theme: string | null;
   font_size: number | null;
   tab_size: number | null;
