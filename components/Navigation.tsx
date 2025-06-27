@@ -1,14 +1,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { GearIcon } from "@radix-ui/react-icons";
+import { GearIcon, PinRightIcon } from "@radix-ui/react-icons";
 import { ModeToggle } from "@/components/ui/ModeToggle";
-import {
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton
-} from "@clerk/nextjs";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 
 export default function Navigation() {
   return (
@@ -24,15 +18,23 @@ export default function Navigation() {
         </div>
         <div className="flex flex-row items-center gap-4">
           <Link href="/settings">
-            <Button variant="outline" size="icon" className="h-9 w-9">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 hover:cursor-pointer"
+            >
               <GearIcon className="h-5 w-5" />
               <span className="sr-only">Settings</span>
             </Button>
           </Link>
           <ModeToggle />
           <SignedOut>
-            <SignInButton />
-            <SignUpButton />
+            <SignInButton mode="modal">
+              <Button className="hover:cursor-pointer">
+                Sign In
+                <PinRightIcon className="h-4 w-4" />
+              </Button>
+            </SignInButton>
           </SignedOut>
           <SignedIn>
             <UserButton />

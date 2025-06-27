@@ -23,7 +23,7 @@ export function ModeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" className="hover:cursor-pointer">
           {mounted &&
             (resolvedTheme === "dark" ? (
               <Moon className="h-[1.2rem] w-[1.2rem]" />

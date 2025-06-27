@@ -5,8 +5,7 @@ import { getUser } from "../actions/get-preferences";
 import { useEffect, useState } from "react";
 import { User } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-// import { updatePreferences } from "../actions/update-preferences";
-// import { useActionState } from "react";
+import { updatePreferences } from "../actions/update-preferences";
 
 export default function SettingsPage() {
   const [preferences, setPreferences] = useState<User>({
@@ -18,36 +17,154 @@ export default function SettingsPage() {
     language: "cpp"
   });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     async function fetchPreferences() {
-      const prefsFromDB = await getUser();
+      try {
+        setLoading(true);
+        const prefsFromDB = await getUser();
 
-      if (prefsFromDB) {
-        setPreferences({
-          theme: prefsFromDB.theme ?? null,
-          font_size: prefsFromDB.font_size ?? 14,
-          tab_size: prefsFromDB.tab_size ?? 4,
-          line_numbers: prefsFromDB.line_numbers ?? true,
-          vim_mode: prefsFromDB.vim_mode ?? false,
-          language: prefsFromDB.language ?? "cpp"
-        });
+        if (prefsFromDB) {
+          setPreferences({
+            theme: prefsFromDB.theme ?? null,
+            font_size: prefsFromDB.font_size ?? 14,
+            tab_size: prefsFromDB.tab_size ?? 4,
+            line_numbers: prefsFromDB.line_numbers ?? true,
+            vim_mode: prefsFromDB.vim_mode ?? false,
+            language: prefsFromDB.language ?? "cpp"
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching preferences:", error);
+        setMessage({ type: "error", text: "Sign in to save preferences ;)" });
+      } finally {
+        setLoading(false);
       }
     }
-    setLoading(true);
+
     fetchPreferences();
-    setLoading(false);
   }, []);
 
+  async function handleSubmit(formData: FormData) {
+    try {
+      setSaving(true);
+      setMessage(null);
+      await updatePreferences(formData);
+      setMessage({ type: "success", text: "Preferences saved successfully!" });
+    } catch (error) {
+      console.error("Error saving preferences:", error);
+      setMessage({ type: "error", text: "Sign in to save preferences ;)" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading) {
-    return <div>Fetching your latest preferences...</div>;
+    return (
+      <main className="min-h-screen w-full px-4 py-4 md:px-6 lg:px-8">
+        <Navigation />
+        <h1 className="mb-6 text-center text-2xl font-bold">Editor Settings</h1>
+
+        <div className="mx-auto mt-8 w-full max-w-md space-y-6">
+          {/* Form fields shimmer */}
+          <div className="space-y-6">
+            {/* Language selector shimmer */}
+            <div>
+              <div
+                className="shimmer mb-2 h-4 w-32 rounded"
+                style={{ backgroundColor: "#1b222c" }}
+              />
+              <div
+                className="shimmer h-10 w-full rounded border"
+                style={{ backgroundColor: "#1b222c" }}
+              />
+            </div>
+
+            {/* Vim mode toggle shimmer */}
+            <div className="flex items-center justify-between">
+              <div
+                className="shimmer h-4 w-20 rounded"
+                style={{ backgroundColor: "#1b222c" }}
+              />
+              <div
+                className="shimmer h-4 w-4 rounded"
+                style={{ backgroundColor: "#1b222c" }}
+              />
+            </div>
+
+            {/* Font size shimmer */}
+            <div>
+              <div
+                className="shimmer mb-2 h-4 w-20 rounded"
+                style={{ backgroundColor: "#1b222c" }}
+              />
+              <div
+                className="shimmer h-10 w-full rounded border"
+                style={{ backgroundColor: "#1b222c" }}
+              />
+            </div>
+
+            {/* Tab size shimmer */}
+            <div>
+              <div
+                className="shimmer mb-2 h-4 w-16 rounded"
+                style={{ backgroundColor: "#1b222c" }}
+              />
+              <div
+                className="shimmer h-10 w-full rounded border"
+                style={{ backgroundColor: "#1b222c" }}
+              />
+            </div>
+
+            {/* Line numbers toggle shimmer */}
+            <div className="flex items-center justify-between">
+              <div
+                className="shimmer h-4 w-28 rounded"
+                style={{ backgroundColor: "#1b222c" }}
+              />
+              <div
+                className="shimmer h-4 w-4 rounded"
+                style={{ backgroundColor: "#1b222c" }}
+              />
+            </div>
+
+            {/* Save button shimmer */}
+            <div
+              className="shimmer mt-8 h-10 w-full rounded"
+              style={{ backgroundColor: "#1b222c" }}
+            />
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (
     <main className="min-h-screen w-full px-4 py-4 md:px-6 lg:px-8">
       <Navigation />
       <h1 className="mb-6 text-center text-2xl font-bold">Editor Settings</h1>
-      <form className="mx-auto mt-8 w-full max-w-md space-y-6">
+
+      {message && (
+        <div
+          className={`mx-auto mb-4 max-w-md rounded-md p-3 text-sm ${
+            message.type === "success"
+              ? "border border-green-200 bg-green-100 text-green-800"
+              : "border border-red-200 bg-red-100 text-red-800"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
+
+      <form
+        action={handleSubmit}
+        className="mx-auto mt-8 w-full max-w-md space-y-6"
+      >
         {/* Preferred Coding Language */}
         <div>
           <label htmlFor="language" className="mb-1 block text-sm font-medium">
@@ -150,8 +267,12 @@ export default function SettingsPage() {
             }
           />
         </div>
-        <Button type="submit" className="mt-8 w-full hover:cursor-pointer">
-          Save Preferences
+        <Button
+          type="submit"
+          className="mt-8 w-full hover:cursor-pointer"
+          disabled={saving}
+        >
+          {saving ? "Saving..." : "Save Preferences"}
         </Button>
       </form>
     </main>

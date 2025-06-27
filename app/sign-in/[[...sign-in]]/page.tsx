@@ -59,9 +59,10 @@ export default function SignInPage() {
       } else {
         setError("Invalid credentials. Please check your email and password.");
       }
-    } catch (err: any) {
-      if (err.errors?.[0]?.message) {
-        setError(err.errors[0].message);
+    } catch (err) {
+      const error = err as { errors?: Array<{ message: string }> };
+      if (error.errors?.[0]?.message) {
+        setError(error.errors[0].message);
       } else {
         setError("An error occurred. Please try again.");
       }
@@ -86,7 +87,7 @@ export default function SignInPage() {
         redirectUrl: "/",
         redirectUrlComplete: "/"
       });
-    } catch (err: any) {
+    } catch (err) {
       setError("Google sign-in failed. Please try again.");
       console.error("Google sign-in error:", err);
     } finally {
@@ -109,7 +110,7 @@ export default function SignInPage() {
         redirectUrl: "/",
         redirectUrlComplete: "/"
       });
-    } catch (err: any) {
+    } catch (err) {
       setError("GitHub sign-in failed. Please try again.");
       console.error("GitHub sign-in error:", err);
     } finally {

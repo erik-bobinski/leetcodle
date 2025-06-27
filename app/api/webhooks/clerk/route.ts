@@ -77,7 +77,7 @@ export async function POST(req: Request) {
       tab_size: 2,
       line_numbers: true,
       vim_mode: false,
-      language: "rust"
+      language: "cpp"
     } as User);
 
     if (error) {
