@@ -100,7 +100,6 @@ export async function POST(req: Request) {
       language
     } = payload.data;
 
-    // Update the user record in your 'users' table
     const { error } = await supabase
       .from("users")
       .update({

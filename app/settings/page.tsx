@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { User } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { updatePreferences } from "../actions/update-preferences";
+import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const [preferences, setPreferences] = useState<User>({
@@ -68,7 +70,14 @@ export default function SettingsPage() {
     return (
       <main className="min-h-screen w-full px-4 py-4 md:px-6 lg:px-8">
         <Navigation />
-        <h1 className="mb-6 text-center text-2xl font-bold">Editor Settings</h1>
+        <div className="relative mx-auto mb-6 flex w-full max-w-md items-center justify-center">
+          <Link href="/">
+            <ArrowLeftIcon className="absolute left-0 h-6 w-6" />
+          </Link>
+          <h1 className="w-full text-center text-2xl font-bold">
+            Editor Settings
+          </h1>
+        </div>
 
         <div className="mx-auto mt-8 w-full max-w-md space-y-6">
           {/* Form fields shimmer */}
@@ -147,7 +156,14 @@ export default function SettingsPage() {
   return (
     <main className="min-h-screen w-full px-4 py-4 md:px-6 lg:px-8">
       <Navigation />
-      <h1 className="mb-6 text-center text-2xl font-bold">Editor Settings</h1>
+      <div className="relative mx-auto mb-6 flex w-full max-w-md items-center justify-center">
+        <Link href="/">
+          <ArrowLeftIcon className="absolute left-0 h-6 w-6 cursor-pointer" />
+        </Link>
+        <h1 className="w-full text-center text-2xl font-bold">
+          Editor Settings
+        </h1>
+      </div>
 
       {message && (
         <div

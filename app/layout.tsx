@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
@@ -27,10 +28,7 @@ export default function RootLayout({
   return (
     <ClerkProvider
       appearance={{
-        elements: {
-          formButtonPrimary: "bg-blue-600 hover:bg-blue-700",
-          card: "shadow-lg"
-        }
+        baseTheme: dark
       }}
     >
       <html lang="en" suppressHydrationWarning>
