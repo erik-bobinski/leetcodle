@@ -2,7 +2,6 @@
 
 import { supabase } from "@/lib/supabase";
 import { currentUser } from "@clerk/nextjs/server";
-// import { auth } from "@clerk/nextjs/server";
 
 export async function updatePreferences(formData: FormData) {
   try {

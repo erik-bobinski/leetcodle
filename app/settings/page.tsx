@@ -55,7 +55,9 @@ export default function SettingsPage() {
     try {
       setSaving(true);
       setMessage(null);
+      console.log("Before save - language:", preferences.language);
       await updatePreferences(formData);
+      console.log("After save - language:", preferences.language);
       setMessage({ type: "success", text: "Preferences saved successfully!" });
     } catch (error) {
       console.error("Error saving preferences:", error);
@@ -175,7 +177,11 @@ export default function SettingsPage() {
       )}
 
       <form
-        action={handleSubmit}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const formData = new window.FormData(e.currentTarget);
+          await handleSubmit(formData);
+        }}
         className="mx-auto mt-8 w-full max-w-md space-y-6"
       >
         {/* Preferred Coding Language */}
@@ -187,7 +193,7 @@ export default function SettingsPage() {
             id="language"
             name="language"
             className="w-full rounded-md border px-3 py-2 text-sm"
-            value={preferences.language || "cpp"}
+            value={preferences.language ?? "cpp"}
             style={{ borderColor: "var(--primary)" }}
             onChange={(e) =>
               setPreferences({ ...preferences, language: e.target.value })
