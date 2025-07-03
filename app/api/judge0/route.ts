@@ -6,7 +6,7 @@ import type {
 } from "@/types/judge0";
 import { isExecutionResponse, isSubmissionResponse } from "@/types/judge0";
 
-// api params
+// api keys
 const JUDGE0_HOST = "judge0-ce.p.rapidapi.com";
 const JUDGE0_BASE_URL = `https://${JUDGE0_HOST}`;
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
@@ -21,7 +21,7 @@ const headers = {
   "X-RapidAPI-Host": JUDGE0_HOST
 };
 
-// Constants for rate limiting
+// constants for rate limiting
 const MAX_POLL_RETRIES = 20;
 const POLL_INTERVAL = 500; // ms
 

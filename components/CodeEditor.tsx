@@ -162,7 +162,7 @@ export default function CodeEditor() {
       EditorView.theme({
         "&": {
           height: "400px",
-          border: "1px solid #ddd",
+          border: "2px solid var(--primary)",
           borderRadius: "4px"
         },
         ".cm-content": {

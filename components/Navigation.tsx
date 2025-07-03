@@ -3,8 +3,21 @@ import { Button } from "@/components/ui/button";
 import { GearIcon, PinRightIcon } from "@radix-ui/react-icons";
 import { ModeToggle } from "@/components/ui/ModeToggle";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import React from "react";
 
 export default function Navigation() {
+  // Shimmer placeholder component
+  function ShimmerCircle() {
+    return (
+      <div
+        className="relative h-9 w-9 animate-pulse overflow-hidden rounded-full bg-gray-300 dark:bg-gray-700"
+        aria-hidden="true"
+      >
+        <div className="animate-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-gray-600/60" />
+      </div>
+    );
+  }
+
   return (
     <header className="mb-8">
       <div className="flex h-16 flex-row items-center justify-between">
@@ -37,7 +50,7 @@ export default function Navigation() {
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <UserButton />
+            <UserButton fallback={<ShimmerCircle />} />
           </SignedIn>
         </div>
       </div>

@@ -1,6 +1,5 @@
 "use client";
 
-import Navigation from "@/components/Navigation";
 import { getUser } from "../actions/get-preferences";
 import { useEffect, useState } from "react";
 import { User } from "@/lib/supabase";
@@ -69,7 +68,6 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <main className="min-h-screen w-full px-4 py-4 md:px-6 lg:px-8">
-        <Navigation />
         <div className="relative mx-auto mb-6 flex w-full max-w-md items-center justify-center">
           <Link href="/">
             <ArrowLeftIcon className="absolute left-0 h-6 w-6" />
@@ -155,10 +153,9 @@ export default function SettingsPage() {
 
   return (
     <main className="min-h-screen w-full px-4 py-4 md:px-6 lg:px-8">
-      <Navigation />
       <div className="relative mx-auto mb-6 flex w-full max-w-md items-center justify-center">
         <Link href="/">
-          <ArrowLeftIcon className="absolute left-0 h-6 w-6 cursor-pointer" />
+          <ArrowLeftIcon className="absolute left-0 h-6 w-6 cursor-pointer transition-opacity hover:opacity-50" />
         </Link>
         <h1 className="w-full text-center text-2xl font-bold">
           Editor Settings
@@ -191,6 +188,7 @@ export default function SettingsPage() {
             name="language"
             className="w-full rounded-md border px-3 py-2 text-sm"
             value={preferences.language || "cpp"}
+            style={{ borderColor: "var(--primary)" }}
             onChange={(e) =>
               setPreferences({ ...preferences, language: e.target.value })
             }
@@ -215,6 +213,7 @@ export default function SettingsPage() {
             type="checkbox"
             className="h-4 w-4 rounded border-gray-300"
             checked={preferences.vim_mode ?? false}
+            style={{ borderColor: "var(--primary)" }}
             onChange={(e) =>
               setPreferences({ ...preferences, vim_mode: e.target.checked })
             }
@@ -235,6 +234,7 @@ export default function SettingsPage() {
             step="1"
             className="w-full rounded-md border px-3 py-2 text-sm"
             value={preferences.font_size ?? 14}
+            style={{ borderColor: "var(--primary)" }}
             onChange={(e) =>
               setPreferences({
                 ...preferences,
@@ -258,6 +258,7 @@ export default function SettingsPage() {
             step="1"
             className="w-full rounded-md border px-3 py-2 text-sm"
             value={preferences.tab_size ?? 4}
+            style={{ borderColor: "var(--primary)" }}
             onChange={(e) =>
               setPreferences({
                 ...preferences,
@@ -278,6 +279,7 @@ export default function SettingsPage() {
             type="checkbox"
             className="h-4 w-4 rounded border-gray-300"
             checked={preferences.line_numbers ?? true}
+            style={{ borderColor: "var(--primary)" }}
             onChange={(e) =>
               setPreferences({ ...preferences, line_numbers: e.target.checked })
             }

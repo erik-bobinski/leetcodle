@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import { ThemeProvider } from "@/components/theme-provider";
+import Navigation from "@/components/Navigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +43,9 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <div className="mx-auto px-4 py-4 md:px-6 lg:px-8">
+              <Navigation />
+            </div>
             {children}
           </ThemeProvider>
         </body>
