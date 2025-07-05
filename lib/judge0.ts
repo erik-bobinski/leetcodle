@@ -87,7 +87,7 @@ export async function pollExecutionResult(
       throw new Error(`${data}`);
     }
 
-    return await data;
+    return data;
   } catch (error) {
     if (error instanceof Error) {
       console.error(error.message);

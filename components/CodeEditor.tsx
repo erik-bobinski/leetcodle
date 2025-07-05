@@ -193,8 +193,13 @@ export default function CodeEditor({
   useEffect(() => {
     if (!editorRef.current || viewRef.current) return;
 
+    const indent = " ".repeat(preferencesState?.tab_size || 2);
+    const boilerplate = languages[langKeyState].boilerplate.replace(
+      /{{indent}}/g,
+      indent
+    );
     const view = new EditorView({
-      doc: languages[langKeyState].boilerplate,
+      doc: boilerplate,
       parent: editorRef.current,
       extensions: refreshExtensions(languageExtension)
     });
@@ -204,7 +209,7 @@ export default function CodeEditor({
 
     // Call onCodeChange with initial content
     if (onCodeChange) {
-      onCodeChange(languages[langKeyState].boilerplate);
+      onCodeChange(boilerplate);
     }
     if (onLanguageChange) {
       onLanguageChange(langKeyState);
@@ -236,7 +241,11 @@ export default function CodeEditor({
     if (!viewRef.current) return;
 
     const view = viewRef.current;
-    const newDoc = languages[langKeyState].boilerplate;
+    const indent = " ".repeat(preferencesState?.tab_size || 2);
+    const newDoc = languages[langKeyState].boilerplate.replace(
+      /{{indent}}/g,
+      indent
+    );
 
     view.dispatch({
       changes: {
@@ -294,7 +303,7 @@ export default function CodeEditor({
         >
           {Object.entries(languages).map(([key, lang]) => (
             <option key={key} value={key}>
-              {lang.name}
+              {lang.name} ({lang.version})
             </option>
           ))}
         </select>

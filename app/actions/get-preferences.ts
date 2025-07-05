@@ -2,11 +2,12 @@
 
 import { supabase } from "@/lib/supabase";
 import type { User } from "@/lib/supabase";
-import { auth } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
 
 export async function getUser(): Promise<User | null> {
   try {
-    const { userId } = await auth();
+    const user = await currentUser();
+    const userId = user?.id;
 
     if (!userId) {
       console.error("No authenticated user found");

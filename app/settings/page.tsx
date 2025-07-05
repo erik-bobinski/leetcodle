@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { updatePreferences } from "../actions/update-preferences";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
+import { languages } from "@/types/editor-languages";
 
 export default function SettingsPage() {
   const [preferences, setPreferences] = useState<User>({
@@ -199,12 +200,11 @@ export default function SettingsPage() {
               setPreferences({ ...preferences, language: e.target.value })
             }
           >
-            <option value="cpp">C++</option>
-            <option value="go">Go</option>
-            <option value="javascript">JavaScript</option>
-            <option value="typescript">TypeScript</option>
-            <option value="python">Python</option>
-            <option value="rust">Rust</option>
+            {Object.entries(languages).map(([key, lang]) => (
+              <option key={key} value={key}>
+                {lang.name} ({lang.version})
+              </option>
+            ))}
           </select>
         </div>
 

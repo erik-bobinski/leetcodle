@@ -138,7 +138,13 @@ export default function Home() {
                   <div className="space-y-2">
                     <div>
                       <strong>Status:</strong>{" "}
-                      {executionResult.status.description}
+                      {typeof executionResult === "object" &&
+                      executionResult.status &&
+                      executionResult.status.description
+                        ? executionResult.status.description
+                        : typeof executionResult === "string"
+                          ? executionResult
+                          : "Unknown status"}
                     </div>
                     {executionResult.stdout && (
                       <div>

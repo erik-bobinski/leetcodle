@@ -7,6 +7,7 @@ import { LanguageSupport } from "@codemirror/language";
 
 interface Language {
   name: string;
+  version: string;
   extension: () => LanguageSupport;
   boilerplate: string;
   language_id: number; // Judge0 language ID
@@ -15,83 +16,62 @@ interface Language {
 export const languages: Record<string, Language> = {
   cpp: {
     name: "C++",
+    version: "17",
     extension: cpp,
     language_id: 54, // Judge0 C++17 language ID
-    boilerplate: `#include <iostream>
-#include <vector>
-
-class Solution {
-public:
-    // Your code here
-};
-
-int main() {
-    Solution solution;
-    return 0;
+    boilerplate: `int main() {
+{{indent}}// Your code here
+{{indent}}return 0;
 }`
   },
   go: {
     name: "Go",
+    version: "1.21",
     extension: go,
     language_id: 60, // Judge0 Go language ID
-    boilerplate: `package main
-
-func solution() {
-    // Your code here
-}
-
-func main() {
-    solution()
+    boilerplate: `func main() {
+{{indent}}// Your code here
 }`
   },
   javascript: {
     name: "JavaScript",
+    version: "Node.js 18.15",
     extension: javascript,
     language_id: 63, // Judge0 Node.js language ID
     boilerplate: `function solution() {
-  // Your code here
-}`
+{{indent}}// Your code here
+}
+
+solution();`
   },
   typescript: {
     name: "TypeScript",
+    version: "5.0",
     extension: () => javascript({ typescript: true }),
     language_id: 74, // Judge0 TypeScript language ID
     boilerplate: `function solution(): void {
-  // Your code here
+{{indent}}// Your code here
 }
 
-// TypeScript-specific features
-interface Example {
-  name: string;
-  value: number;
-}
-
-const example: Example = {
-  name: "test",
-  value: 42
-};`
+solution();`
   },
   python: {
     name: "Python",
+    version: "3.11",
     extension: python,
     language_id: 71, // Judge0 Python3 language ID
     boilerplate: `def solution():
-    # Your code here
-    pass
+{{indent}}# Your code here
 
-if __name__ == "__main__":
-    solution()`
+solution()`
   },
   rust: {
     name: "Rust",
+    version: "1.70",
     extension: rust,
     language_id: 73, // Judge0 Rust language ID
-    boilerplate: `fn solution() {
-    // Your code here
-}
-
-fn main() {
-    solution();
+    boilerplate: `fn main() {
+{{indent}}// Your code here
 }`
   }
 };
