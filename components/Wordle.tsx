@@ -1,14 +1,51 @@
+import { CheckIcon, Cross1Icon } from "@radix-ui/react-icons";
+interface SquareProps {
+  value?: string;
+  state?: "empty" | "passed" | "failed";
+}
+
 export default function Wordle() {
-  function Square({ value = "" }) {
+  function Square({ value = "", state = "empty" }: SquareProps) {
+    function getSquareStyles() {
+      switch (state) {
+        case "passed":
+          return {
+            backgroundColor: "rgb(34 197 94)", // green-500
+            borderColor: "rgb(34 197 94)",
+            color: "white"
+          };
+        case "failed":
+          return {
+            backgroundColor: "rgb(239 68 68)", // red-500
+            borderColor: "rgb(239 68 68)",
+            color: "white"
+          };
+        default:
+          return {
+            borderColor: "var(--primary)"
+          };
+      }
+    }
+
+    function getSquareContent() {
+      if (state === "passed") {
+        return <CheckIcon className="h-6 w-6" />;
+      }
+      if (state === "failed") {
+        return <Cross1Icon className="h-6 w-6" />;
+      }
+      return value;
+    }
+
     return (
       <div
         className="flex h-12 w-12 items-center justify-center rounded-md border text-2xl font-bold"
         style={{
           userSelect: "none",
-          borderColor: "var(--primary)"
+          ...getSquareStyles()
         }}
       >
-        {value}
+        {getSquareContent()}
       </div>
     );
   }

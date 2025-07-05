@@ -1,5 +1,5 @@
 import CodeEditor from "../components/CodeEditor";
-import { PlayIcon } from "@radix-ui/react-icons";
+import { ArrowRightIcon, PlayIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import Wordle from "@/components/Wordle";
 
@@ -17,7 +17,7 @@ export default function Home() {
 
         {/* Code Editor */}
         <section className="flex min-h-0 flex-1 gap-6">
-          <div className="flex min-h-0 w-1/2 flex-1 flex-col">
+          <div className="flex min-h-0 w-2/3 flex-col">
             <div className="min-h-0 flex-1">
               <CodeEditor />
               <div className="flex justify-start pt-2">
@@ -33,8 +33,29 @@ export default function Home() {
           </div>
 
           {/* Wordle */}
-          <div className="">
-            <Wordle />
+          <div className="flex w-1/3 flex-col items-center">
+            <div className="relative mt-20">
+              {/* Vertical axis on the left */}
+              <div className="absolute top-0 bottom-0 -left-16 flex items-center">
+                <div className="relative flex flex-col items-center">
+                  <div className="absolute inset-0 flex flex-col items-center">
+                    <div className="bg-foreground/60 h-32 w-px"></div>
+                  </div>
+                  <span className="bg-background relative z-10 flex rotate-90 items-center">
+                    Attempts
+                    <ArrowRightIcon className="ml-1 h-5 w-5" />
+                  </span>
+                </div>
+              </div>
+              {/* Horizontal Axis */}
+              <div className="mb-2 text-center">
+                <span className="inline-flex items-center gap-1">
+                  Test Cases
+                  <ArrowRightIcon className="h-5 w-5" />
+                </span>
+              </div>
+              <Wordle />
+            </div>
           </div>
         </section>
       </div>
