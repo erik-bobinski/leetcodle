@@ -19,7 +19,7 @@ export default function Navigation() {
   }
 
   return (
-    <header className="mb-8">
+    <header className="">
       <div className="flex h-16 flex-row items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Leetcodle</h1>

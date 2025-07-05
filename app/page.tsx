@@ -1,9 +1,68 @@
+"use client";
+
 import CodeEditor from "../components/CodeEditor";
 import { ArrowRightIcon, PlayIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import Wordle from "@/components/Wordle";
+import { useState } from "react";
+import { languages } from "@/types/editor-languages";
+import { submitCode, pollExecutionResult } from "@/lib/judge0";
+import type { Judge0ExecutionResponse } from "@/types/judge0";
 
 export default function Home() {
+  const [currentCode, setCurrentCode] = useState("");
+  const [currentLanguage, setCurrentLanguage] = useState("cpp");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [executionResult, setExecutionResult] =
+    useState<Judge0ExecutionResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleCodeChange = (code: string) => {
+    setCurrentCode(code);
+  };
+
+  const handleLanguageChange = (language: string) => {
+    setCurrentLanguage(language);
+  };
+
+  const handleSubmit = async () => {
+    if (!currentCode.trim()) {
+      setError("Please enter some code to submit");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    setExecutionResult(null);
+
+    try {
+      const languageId =
+        languages[currentLanguage as keyof typeof languages].language_id;
+      const token = await submitCode(currentCode, languageId);
+
+      if (typeof token === "string" && token.startsWith("Error")) {
+        setError(token);
+        return;
+      }
+
+      // Poll for results
+      const result = await pollExecutionResult(token);
+
+      if (typeof result === "string" && result.startsWith("Error")) {
+        setError(result);
+        return;
+      }
+
+      setExecutionResult(result as Judge0ExecutionResponse);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <main className="flex min-h-screen w-full flex-col px-4 py-4 md:px-6 lg:px-8">
       <div className="mx-auto flex h-full min-h-0 w-full max-w-screen-2xl flex-1 flex-col">
@@ -19,24 +78,29 @@ export default function Home() {
         <section className="flex min-h-0 flex-1 gap-6">
           <div className="flex min-h-0 w-2/3 flex-col">
             <div className="min-h-0 flex-1">
-              <CodeEditor />
+              <CodeEditor
+                onCodeChange={handleCodeChange}
+                onLanguageChange={handleLanguageChange}
+              />
               <div className="flex justify-start pt-2">
                 <Button
                   type="button"
                   className="flex cursor-pointer items-center gap-2"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
                 >
                   <PlayIcon className="h-5 w-5" />
-                  Submit
+                  {isSubmitting ? "Running..." : "Submit"}
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Wordle */}
-          <div className="flex w-1/3 flex-col items-center">
-            <div className="relative mt-20">
+          {/* Wordle + Results */}
+          <div className="flex w-1/3 flex-col items-start pt-20">
+            <div className="relative h-80 w-full">
               {/* Vertical axis on the left */}
-              <div className="absolute top-0 bottom-0 -left-16 flex items-center">
+              <div className="absolute top-0 bottom-0 flex items-center">
                 <div className="relative flex flex-col items-center">
                   <div className="absolute inset-0 flex flex-col items-center">
                     <div className="bg-foreground/60 h-32 w-px"></div>
@@ -48,14 +112,68 @@ export default function Home() {
                 </div>
               </div>
               {/* Horizontal Axis */}
-              <div className="mb-2 text-center">
+              <div
+                className="-mt-20 mb-0 text-center"
+                style={{ position: "relative", top: "12px" }}
+              >
                 <span className="inline-flex items-center gap-1">
                   Test Cases
                   <ArrowRightIcon className="h-5 w-5" />
                 </span>
               </div>
-              <Wordle />
+              <div className="flex h-full items-center justify-center">
+                <Wordle />
+              </div>
             </div>
+            {/* Results Display */}
+            {(executionResult || error) && (
+              <div className="bg-background text-foreground border-border w-full rounded border p-4 shadow-sm">
+                <h3 className="mb-2 font-semibold">Execution Results</h3>
+                {error && (
+                  <div className="mb-2 text-red-600 dark:text-red-400">
+                    <strong>Error:</strong> {error}
+                  </div>
+                )}
+                {executionResult && (
+                  <div className="space-y-2">
+                    <div>
+                      <strong>Status:</strong>{" "}
+                      {executionResult.status.description}
+                    </div>
+                    {executionResult.stdout && (
+                      <div>
+                        <strong>Output:</strong>
+                        <pre className="bg-muted text-foreground dark:bg-muted dark:text-foreground mt-1 overflow-x-auto rounded p-2 text-sm">
+                          {executionResult.stdout}
+                        </pre>
+                      </div>
+                    )}
+                    {executionResult.stderr && (
+                      <div>
+                        <strong>Error Output:</strong>
+                        <pre className="mt-1 overflow-x-auto rounded bg-red-100 p-2 text-sm text-red-800 dark:bg-red-900 dark:text-red-200">
+                          {executionResult.stderr}
+                        </pre>
+                      </div>
+                    )}
+                    {executionResult.compile_output && (
+                      <div>
+                        <strong>Compilation Output:</strong>
+                        <pre className="mt-1 overflow-x-auto rounded bg-yellow-100 p-2 text-sm text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                          {executionResult.compile_output}
+                        </pre>
+                      </div>
+                    )}
+                    <div className="text-muted-foreground text-sm">
+                      <span>Time: {executionResult.time}s</span>
+                      <span className="ml-4">
+                        Memory: {executionResult.memory}KB
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
       </div>

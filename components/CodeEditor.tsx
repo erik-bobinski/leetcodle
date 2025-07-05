@@ -84,7 +84,15 @@ const defaultPreferences = {
   language: "cpp"
 };
 
-export default function CodeEditor() {
+interface CodeEditorProps {
+  onCodeChange?: (code: string) => void;
+  onLanguageChange?: (language: string) => void;
+}
+
+export default function CodeEditor({
+  onCodeChange,
+  onLanguageChange
+}: CodeEditorProps) {
   // ref to codemirror view's container
   const editorRef = useRef<HTMLDivElement>(null);
 
@@ -161,7 +169,7 @@ export default function CodeEditor() {
       ]),
       EditorView.theme({
         "&": {
-          height: "400px",
+          height: "500px",
           border: "2px solid var(--primary)",
           borderRadius: "4px"
         },
@@ -193,7 +201,34 @@ export default function CodeEditor() {
 
     viewRef.current = view;
     view.focus();
+
+    // Call onCodeChange with initial content
+    if (onCodeChange) {
+      onCodeChange(languages[langKeyState].boilerplate);
+    }
+    if (onLanguageChange) {
+      onLanguageChange(langKeyState);
+    }
   }, [preferencesState !== null]); // re-init when prefs are set
+
+  // Listen for code changes
+  useEffect(() => {
+    if (!viewRef.current || !onCodeChange) return;
+
+    const view = viewRef.current;
+    const updateListener = EditorView.updateListener.of((update) => {
+      if (update.docChanged) {
+        onCodeChange(update.state.doc.toString());
+      }
+    });
+
+    view.dispatch({
+      effects: StateEffect.reconfigure.of([
+        ...refreshExtensions(languageExtension),
+        updateListener
+      ])
+    });
+  }, [onCodeChange, languageExtension]);
 
   // handle client-side editor config changes
   // i.e. lang selector, vim toggle
@@ -233,7 +268,7 @@ export default function CodeEditor() {
           />
         </div>
         <div
-          className="shimmer h-[300px] w-full rounded border border-[#222b3c]"
+          className="shimmer h-[500px] w-full rounded border border-[#222b3c]"
           style={{
             backgroundColor: "#1b222c",
             boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)"
@@ -248,9 +283,13 @@ export default function CodeEditor() {
       <div className="mb-2 flex gap-2">
         <select
           value={langKeyState}
-          onChange={(e) =>
-            setLangKeyState(e.target.value as keyof typeof languages)
-          }
+          onChange={(e) => {
+            const newLang = e.target.value as keyof typeof languages;
+            setLangKeyState(newLang);
+            if (onLanguageChange) {
+              onLanguageChange(newLang);
+            }
+          }}
           className="cursor-pointer rounded border border-[#2d3a4e] bg-[#1b222c] p-1 text-[#a6accd] transition-colors hover:border-[#4b526d] hover:bg-[#222b3c]"
         >
           {Object.entries(languages).map(([key, lang]) => (
