@@ -39,7 +39,7 @@ export default function Wordle() {
 
     return (
       <div
-        className="flex h-12 w-12 items-center justify-center rounded-md border text-2xl font-bold"
+        className="box-border flex aspect-square h-full w-full items-center justify-center rounded-md border text-2xl font-bold"
         style={{
           userSelect: "none",
           ...getSquareStyles()
@@ -51,7 +51,7 @@ export default function Wordle() {
   }
 
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div className="mx-auto grid w-full max-w-xs grid-cols-5 grid-rows-5 gap-2">
       {Array.from({ length: 25 }).map((_, i) => (
         <Square key={i} />
       ))}

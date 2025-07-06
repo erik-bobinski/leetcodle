@@ -75,8 +75,8 @@ export default function Home() {
         </section>
 
         {/* Code Editor */}
-        <section className="flex min-h-0 flex-1 gap-6">
-          <div className="flex min-h-0 w-2/3 flex-col">
+        <section className="flex min-h-0 flex-1 flex-col gap-6 md:flex-row">
+          <div className="flex min-h-0 w-full flex-col md:w-2/3">
             <div className="min-h-0 flex-1">
               <CodeEditor
                 onCodeChange={handleCodeChange}
@@ -97,89 +97,77 @@ export default function Home() {
           </div>
 
           {/* Wordle + Results */}
-          <div className="flex w-1/3 flex-col items-start pt-20">
-            <div className="relative h-80 w-full">
-              {/* Vertical axis on the left */}
-              <div className="absolute top-0 bottom-0 flex items-center">
-                <div className="relative flex flex-col items-center">
-                  <div className="absolute inset-0 flex flex-col items-center">
-                    <div className="bg-foreground/60 h-32 w-px"></div>
-                  </div>
-                  <span className="bg-background relative z-10 flex rotate-90 items-center">
-                    Attempts
-                    <ArrowRightIcon className="ml-1 h-5 w-5" />
-                  </span>
-                </div>
+          <div className="flex w-full flex-col items-start md:w-1/3">
+            <div className="w-full" style={{ minHeight: "auto" }}>
+              <div className="flex items-center justify-center">
+                Test Cases <ArrowRightIcon />
               </div>
-              {/* Horizontal Axis */}
-              <div
-                className="-mt-20 mb-0 text-center"
-                style={{ position: "relative", top: "12px" }}
-              >
-                <span className="inline-flex items-center gap-1">
-                  Test Cases
-                  <ArrowRightIcon className="h-5 w-5" />
-                </span>
+              <div className="flex origin-left rotate-90 items-center justify-center">
+                Attemps <ArrowRightIcon />
               </div>
-              <div className="flex h-full items-center justify-center">
+              <div className="-mt-4 ml-4">
                 <Wordle />
               </div>
             </div>
-            {/* Results Display */}
-            {(executionResult || error) && (
-              <div className="bg-background text-foreground border-border w-full rounded border p-4 shadow-sm">
-                <h3 className="mb-2 font-semibold">Execution Results</h3>
-                {error && (
-                  <div className="mb-2 text-red-600 dark:text-red-400">
-                    <strong>Error:</strong> {error}
+            {/* Results Display - always visible */}
+            <div className="bg-background text-foreground border-border mt-4 w-full rounded border p-4 shadow-sm">
+              <h3 className="mb-2 font-semibold">Execution Results</h3>
+              {error && (
+                <div className="mb-2 text-red-600 dark:text-red-400">
+                  <strong>Error:</strong> {error}
+                </div>
+              )}
+              {executionResult ? (
+                <div className="space-y-2">
+                  <div>
+                    <strong>Status:</strong>{" "}
+                    {typeof executionResult === "object" &&
+                    executionResult.status &&
+                    executionResult.status.description
+                      ? executionResult.status.description
+                      : typeof executionResult === "string"
+                        ? executionResult
+                        : "Unknown status"}
                   </div>
-                )}
-                {executionResult && (
-                  <div className="space-y-2">
+                  {executionResult.stdout && (
                     <div>
-                      <strong>Status:</strong>{" "}
-                      {typeof executionResult === "object" &&
-                      executionResult.status &&
-                      executionResult.status.description
-                        ? executionResult.status.description
-                        : typeof executionResult === "string"
-                          ? executionResult
-                          : "Unknown status"}
+                      <strong>Output:</strong>
+                      <pre className="bg-muted text-foreground dark:bg-muted dark:text-foreground mt-1 overflow-x-auto rounded p-2 text-sm">
+                        {executionResult.stdout}
+                      </pre>
                     </div>
-                    {executionResult.stdout && (
-                      <div>
-                        <strong>Output:</strong>
-                        <pre className="bg-muted text-foreground dark:bg-muted dark:text-foreground mt-1 overflow-x-auto rounded p-2 text-sm">
-                          {executionResult.stdout}
-                        </pre>
-                      </div>
-                    )}
-                    {executionResult.stderr && (
-                      <div>
-                        <strong>Error Output:</strong>
-                        <pre className="mt-1 overflow-x-auto rounded bg-red-100 p-2 text-sm text-red-800 dark:bg-red-900 dark:text-red-200">
-                          {executionResult.stderr}
-                        </pre>
-                      </div>
-                    )}
-                    {executionResult.compile_output && (
-                      <div>
-                        <strong>Compilation Output:</strong>
-                        <pre className="mt-1 overflow-x-auto rounded bg-yellow-100 p-2 text-sm text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                          {executionResult.compile_output}
-                        </pre>
-                      </div>
-                    )}
-                    <div className="text-muted-foreground text-sm">
-                      <span>Time: {executionResult.time}s</span>
-                      <span className="ml-4">
-                        Memory: {executionResult.memory}KB
-                      </span>
+                  )}
+                  {executionResult.stderr && (
+                    <div>
+                      <strong>Error Output:</strong>
+                      <pre className="mt-1 overflow-x-auto rounded bg-red-100 p-2 text-sm text-red-800 dark:bg-red-900 dark:text-red-200">
+                        {executionResult.stderr}
+                      </pre>
                     </div>
+                  )}
+                  {executionResult.compile_output && (
+                    <div>
+                      <strong>Compilation Output:</strong>
+                      <pre className="mt-1 overflow-x-auto rounded bg-yellow-100 p-2 text-sm text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                        {executionResult.compile_output}
+                      </pre>
+                    </div>
+                  )}
+                  <div className="text-muted-foreground text-sm">
+                    <span>Time: {executionResult.time}s</span>
+                    <span className="ml-4">
+                      Memory: {executionResult.memory}KB
+                    </span>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              ) : (
+                !error && (
+                  <div className="text-muted-foreground text-sm italic">
+                    No output yet. Run your code to see results here.
+                  </div>
+                )
+              )}
+            </div>
           </div>
         </section>
       </div>

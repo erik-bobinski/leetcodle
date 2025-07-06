@@ -3,6 +3,7 @@ import { rust } from "@codemirror/lang-rust";
 import { python } from "@codemirror/lang-python";
 import { cpp } from "@codemirror/lang-cpp";
 import { go } from "@codemirror/lang-go";
+import { java } from "@codemirror/lang-java";
 import { LanguageSupport } from "@codemirror/language";
 
 interface Language {
@@ -29,8 +30,23 @@ export const languages: Record<string, Language> = {
     version: "1.21",
     extension: go,
     language_id: 60, // Judge0 Go language ID
-    boilerplate: `func main() {
+    boilerplate: `package main
+
+import "fmt"
+
+func main() {
 {{indent}}// Your code here
+}`
+  },
+  java: {
+    name: "Java",
+    version: "13.0.1",
+    extension: java,
+    language_id: 62, // Judge0 Java language ID
+    boilerplate: `public class Main {
+{{indent}}public static void main(String[] args) {
+{{indent}}{{indent}}// Your code here
+{{indent}}}
 }`
   },
   javascript: {
