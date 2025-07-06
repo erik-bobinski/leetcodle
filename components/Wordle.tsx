@@ -1,4 +1,6 @@
 import { CheckIcon, Cross1Icon } from "@radix-ui/react-icons";
+import { ArrowRightIcon } from "@radix-ui/react-icons";
+
 interface SquareProps {
   value?: string;
   state?: "empty" | "passed" | "failed";
@@ -51,10 +53,36 @@ export default function Wordle() {
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-xs grid-cols-5 grid-rows-5 gap-2">
-      {Array.from({ length: 25 }).map((_, i) => (
-        <Square key={i} />
-      ))}
+    <div className="flex w-full justify-center">
+      <div className="grid w-full max-w-xs grid-cols-6 grid-rows-6 gap-2">
+        {/* Top-left empty cell */}
+        <div></div>
+        {/* Top axis: Test Cases → */}
+        <div className="col-span-5 -mb-4 flex items-center justify-center text-sm font-medium select-none">
+          Test Cases <ArrowRightIcon className="ml-1" />
+        </div>
+        {/* Left axis and Wordle squares */}
+        {Array.from({ length: 5 })
+          .map((_, rowIdx) => [
+            // Left axis: Attempts → (rotated)
+            <div
+              key={`axis-${rowIdx}`}
+              className="flex items-center justify-center text-sm font-medium select-none"
+            >
+              {rowIdx === 2 ? (
+                <span className="mr-8 flex items-center">
+                  <span>Attempts</span>
+                  <ArrowRightIcon className="rotate-90" />
+                </span>
+              ) : null}
+            </div>,
+            // Wordle squares for this row
+            ...Array.from({ length: 5 }).map((_, colIdx) => (
+              <Square key={`square-${rowIdx * 5 + colIdx}`} />
+            ))
+          ])
+          .flat()}
+      </div>
     </div>
   );
 }

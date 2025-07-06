@@ -1,7 +1,7 @@
 "use client";
 
 import CodeEditor from "../components/CodeEditor";
-import { ArrowRightIcon, PlayIcon } from "@radix-ui/react-icons";
+import { PlayIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import Wordle from "@/components/Wordle";
 import { useState } from "react";
@@ -76,7 +76,7 @@ export default function Home() {
 
         {/* Code Editor */}
         <section className="flex min-h-0 flex-1 flex-col gap-6 md:flex-row">
-          <div className="flex min-h-0 w-full flex-col md:w-2/3">
+          <div className="md:w- mr-4 -ml-4 flex min-h-0 w-full flex-col">
             <div className="min-h-0 flex-1">
               <CodeEditor
                 onCodeChange={handleCodeChange}
@@ -99,15 +99,7 @@ export default function Home() {
           {/* Wordle + Results */}
           <div className="flex w-full flex-col items-start md:w-1/3">
             <div className="w-full" style={{ minHeight: "auto" }}>
-              <div className="flex items-center justify-center">
-                Test Cases <ArrowRightIcon />
-              </div>
-              <div className="flex origin-left rotate-90 items-center justify-center">
-                Attemps <ArrowRightIcon />
-              </div>
-              <div className="-mt-4 ml-4">
-                <Wordle />
-              </div>
+              <Wordle />
             </div>
             {/* Results Display - always visible */}
             <div className="bg-background text-foreground border-border mt-4 w-full rounded border p-4 shadow-sm">
