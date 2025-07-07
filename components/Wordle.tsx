@@ -59,7 +59,8 @@ export default function Wordle() {
         <div></div>
         {/* Top axis: Test Cases → */}
         <div className="col-span-5 -mb-4 flex items-center justify-center text-sm font-medium select-none">
-          Test Cases <ArrowRightIcon className="ml-1" />
+          Test Cases
+          <ArrowRightIcon className="ml-1" />
         </div>
         {/* Left axis and Wordle squares */}
         {Array.from({ length: 5 })
@@ -70,9 +71,9 @@ export default function Wordle() {
               className="flex items-center justify-center text-sm font-medium select-none"
             >
               {rowIdx === 2 ? (
-                <span className="mr-8 flex items-center">
-                  <span>Attempts</span>
-                  <ArrowRightIcon className="rotate-90" />
+                <span className="flex rotate-90 items-center">
+                  Attempts
+                  <ArrowRightIcon className="ml-1" />
                 </span>
               ) : null}
             </div>,

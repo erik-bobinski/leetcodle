@@ -64,105 +64,74 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen w-full flex-col px-4 py-4 md:px-6 lg:px-8">
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-screen-2xl flex-1 flex-col">
-        {/* Coding Problem */}
-        <section className="mx-auto mb-4 flex flex-col items-center justify-center">
-          <h2 className="mr-4 mb-4 font-bold">
-            Coding Problem Name <span className="font-medium">X%</span>
-          </h2>
-          <p>Here goes the description of the coding problem.</p>
-        </section>
-
-        {/* Code Editor */}
-        <section className="flex min-h-0 flex-1 flex-col gap-6 md:flex-row">
-          <div className="md:w- mr-4 -ml-4 flex min-h-0 w-full flex-col">
-            <div className="min-h-0 flex-1">
-              <CodeEditor
-                onCodeChange={handleCodeChange}
-                onLanguageChange={handleLanguageChange}
-              />
-              <div className="flex justify-start pt-2">
-                <Button
-                  type="button"
-                  className="flex cursor-pointer items-center gap-2"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                >
-                  <PlayIcon className="h-5 w-5" />
-                  {isSubmitting ? "Running..." : "Submit"}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Wordle + Results */}
-          <div className="flex w-full flex-col items-start md:w-1/3">
-            <div className="w-full" style={{ minHeight: "auto" }}>
-              <Wordle />
-            </div>
-            {/* Results Display - always visible */}
-            <div className="bg-background text-foreground border-border mt-4 w-full rounded border p-4 shadow-sm">
-              <h3 className="mb-2 font-semibold">Execution Results</h3>
-              {error && (
-                <div className="mb-2 text-red-600 dark:text-red-400">
-                  <strong>Error:</strong> {error}
-                </div>
-              )}
-              {executionResult ? (
-                <div className="space-y-2">
-                  <div>
-                    <strong>Status:</strong>{" "}
-                    {typeof executionResult === "object" &&
-                    executionResult.status &&
-                    executionResult.status.description
-                      ? executionResult.status.description
-                      : typeof executionResult === "string"
-                        ? executionResult
-                        : "Unknown status"}
-                  </div>
-                  {executionResult.stdout && (
-                    <div>
-                      <strong>Output:</strong>
-                      <pre className="bg-muted text-foreground dark:bg-muted dark:text-foreground mt-1 overflow-x-auto rounded p-2 text-sm">
-                        {executionResult.stdout}
-                      </pre>
-                    </div>
-                  )}
-                  {executionResult.stderr && (
-                    <div>
-                      <strong>Error Output:</strong>
-                      <pre className="mt-1 overflow-x-auto rounded bg-red-100 p-2 text-sm text-red-800 dark:bg-red-900 dark:text-red-200">
-                        {executionResult.stderr}
-                      </pre>
-                    </div>
-                  )}
-                  {executionResult.compile_output && (
-                    <div>
-                      <strong>Compilation Output:</strong>
-                      <pre className="mt-1 overflow-x-auto rounded bg-yellow-100 p-2 text-sm text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                        {executionResult.compile_output}
-                      </pre>
-                    </div>
-                  )}
-                  <div className="text-muted-foreground text-sm">
-                    <span>Time: {executionResult.time}s</span>
-                    <span className="ml-4">
-                      Memory: {executionResult.memory}KB
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                !error && (
-                  <div className="text-muted-foreground text-sm italic">
-                    No output yet. Run your code to see results here.
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        </section>
+    <>
+      {/* Problem Title and Description */}
+      <div className="mt-6 mb-8 ml-6 text-center">
+        <h1 className="text-2xl font-bold">1. Today&apos;s Problem Title</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          This is a placeholder for the problem description. It will give
+          details about what you need to solve today.
+        </p>
       </div>
-    </main>
+
+      <main className="flex">
+        {/* Code Editor */}
+        <div className="ml-6 w-2/3">
+          <CodeEditor
+            onCodeChange={handleCodeChange}
+            onLanguageChange={handleLanguageChange}
+          />
+          <div className="flex justify-start pt-2">
+            <Button
+              type="button"
+              className="flex cursor-pointer items-center gap-2"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              <PlayIcon className="h-5 w-5" />
+              {isSubmitting ? "Running..." : "Submit"}
+            </Button>
+          </div>
+        </div>
+
+        {/* Wordle */}
+        <div className="flex flex-col">
+          <Wordle />
+          {/* Output Box */}
+          <div className="border-muted bg-background h-max-60 mt-4 mb-4 ml-8 min-h-[60px] max-w-xs min-w-[300px] overflow-auto rounded-lg border font-mono text-sm shadow-lg">
+            <div className="bg-muted text-primary flex items-center justify-between rounded-t-lg px-3 py-2 font-semibold">
+              <span>Output</span>
+              {executionResult && (
+                <div className="text-muted-foreground flex gap-3 text-xs font-normal">
+                  {typeof executionResult.memory === "number" && (
+                    <span>Memory: {executionResult.memory} KB</span>
+                  )}
+                  {executionResult.time && (
+                    <span>Time: {executionResult.time} s</span>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="border-muted overflow-auto border-t px-3 py-2">
+              {error ? (
+                <span className="text-red-500">{error}</span>
+              ) : executionResult ? (
+                executionResult.stdout ? (
+                  <pre>{executionResult.stdout}</pre>
+                ) : executionResult.stderr ? (
+                  <pre className="text-red-500">{executionResult.stderr}</pre>
+                ) : (
+                  <span>No output.</span>
+                )
+              ) : (
+                <span className="text-muted-foreground">
+                  Output will appear here after you submit your code.
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+    </>
   );
 }

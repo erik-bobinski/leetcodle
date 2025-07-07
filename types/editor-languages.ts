@@ -19,7 +19,7 @@ export const languages: Record<string, Language> = {
     name: "C++",
     version: "17",
     extension: cpp,
-    language_id: 54, // Judge0 C++17 language ID
+    language_id: 54,
     boilerplate: `int main() {
 {{indent}}// Your code here
 {{indent}}return 0;
@@ -29,7 +29,7 @@ export const languages: Record<string, Language> = {
     name: "Go",
     version: "1.21",
     extension: go,
-    language_id: 60, // Judge0 Go language ID
+    language_id: 60,
     boilerplate: `package main
 
 import "fmt"
@@ -42,7 +42,7 @@ func main() {
     name: "Java",
     version: "13.0.1",
     extension: java,
-    language_id: 62, // Judge0 Java language ID
+    language_id: 62,
     boilerplate: `public class Main {
 {{indent}}public static void main(String[] args) {
 {{indent}}{{indent}}// Your code here
@@ -53,7 +53,7 @@ func main() {
     name: "JavaScript",
     version: "Node.js 18.15",
     extension: javascript,
-    language_id: 63, // Judge0 Node.js language ID
+    language_id: 63,
     boilerplate: `function solution() {
 {{indent}}// Your code here
 }
@@ -64,7 +64,7 @@ solution();`
     name: "TypeScript",
     version: "5.0",
     extension: () => javascript({ typescript: true }),
-    language_id: 74, // Judge0 TypeScript language ID
+    language_id: 74,
     boilerplate: `function solution(): void {
 {{indent}}// Your code here
 }
@@ -75,7 +75,7 @@ solution();`
     name: "Python",
     version: "3.11",
     extension: python,
-    language_id: 71, // Judge0 Python3 language ID
+    language_id: 71,
     boilerplate: `def solution():
 {{indent}}# Your code here
 
@@ -85,7 +85,7 @@ solution()`
     name: "Rust",
     version: "1.70",
     extension: rust,
-    language_id: 73, // Judge0 Rust language ID
+    language_id: 73,
     boilerplate: `fn main() {
 {{indent}}// Your code here
 }`
