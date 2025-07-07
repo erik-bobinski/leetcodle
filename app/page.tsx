@@ -98,7 +98,7 @@ export default function Home() {
         <div className="flex flex-col">
           <Wordle />
           {/* Output Box */}
-          <div className="border-muted bg-background h-max-60 mt-4 mb-4 ml-8 min-h-[60px] max-w-xs min-w-[300px] overflow-auto rounded-lg border font-mono text-sm shadow-lg">
+          <div className="border-muted bg-background mt-4 mb-4 ml-8 min-h-[60px] max-w-xs min-w-[300px] flex-1 overflow-auto rounded-lg border font-mono text-sm shadow-lg">
             <div className="bg-muted text-primary flex items-center justify-between rounded-t-lg px-3 py-2 font-semibold">
               <span>Output</span>
               {executionResult && (
@@ -125,7 +125,7 @@ export default function Home() {
                 )
               ) : (
                 <span className="text-muted-foreground">
-                  Output will appear here after you submit your code.
+                  Output will appear here after you submit your code {":)"}
                 </span>
               )}
             </div>
