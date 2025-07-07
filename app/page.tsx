@@ -74,9 +74,9 @@ export default function Home() {
         </p>
       </div>
 
-      <main className="flex">
+      <main className="flex flex-col md:flex-row">
         {/* Code Editor */}
-        <div className="ml-6 w-2/3">
+        <div className="w-0.9 mx-6 md:w-2/3">
           <CodeEditor
             onCodeChange={handleCodeChange}
             onLanguageChange={handleLanguageChange}
@@ -94,8 +94,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Wordle */}
-        <div className="flex flex-col">
+        <div className="mr-4 flex flex-col items-center">
           <Wordle />
           {/* Output Box */}
           <div className="border-muted bg-background mt-4 mb-4 ml-8 min-h-[60px] max-w-xs min-w-[300px] flex-1 overflow-auto rounded-lg border font-mono text-sm shadow-lg">
