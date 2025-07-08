@@ -180,7 +180,7 @@ export default function SettingsPage() {
             message.type === "success"
               ? "border border-green-200 bg-green-100 text-green-800"
               : "border border-red-200 bg-red-100 text-red-800"
-          }`}
+          } text-center`}
         >
           {message.text}
         </div>
@@ -195,14 +195,17 @@ export default function SettingsPage() {
         className="mx-auto mt-8 w-full max-w-md space-y-6"
       >
         {/* Preferred Coding Language */}
-        <div>
-          <label htmlFor="language" className="mb-1 block text-sm font-medium">
+        <div className="flex flex-col items-center">
+          <label
+            htmlFor="language"
+            className="mb-1 block text-center text-sm font-medium"
+          >
             Preferred Language
           </label>
           <select
             id="language"
             name="language"
-            className="w-full rounded-md border px-3 py-2 text-sm"
+            className="w-56 rounded-md border px-3 py-2 text-center text-sm"
             value={preferences.language ?? "cpp"}
             style={{ borderColor: "var(--primary)" }}
             onChange={(e) =>
@@ -218,8 +221,8 @@ export default function SettingsPage() {
         </div>
 
         {/* Vim Mode */}
-        <div className="flex items-center justify-between">
-          <label htmlFor="vim_mode" className="text-sm font-medium">
+        <div className="flex items-center justify-center gap-2">
+          <label htmlFor="vim_mode" className="text-center text-sm font-medium">
             Vim Mode
           </label>
           <input
@@ -236,8 +239,11 @@ export default function SettingsPage() {
         </div>
 
         {/* Font Size */}
-        <div>
-          <label htmlFor="font_size" className="mb-1 block text-sm font-medium">
+        <div className="flex flex-col items-center">
+          <label
+            htmlFor="font_size"
+            className="mb-1 block text-center text-sm font-medium"
+          >
             Font Size
           </label>
           <input
@@ -247,7 +253,7 @@ export default function SettingsPage() {
             min="10"
             max="32"
             step="1"
-            className="w-full rounded-md border px-3 py-2 text-sm"
+            className="w-32 rounded-md border px-3 py-2 text-center text-sm"
             value={preferences.font_size ?? 14}
             style={{ borderColor: "var(--primary)" }}
             onChange={(e) =>
@@ -260,8 +266,11 @@ export default function SettingsPage() {
         </div>
 
         {/* Tab Size */}
-        <div>
-          <label htmlFor="tab_size" className="mb-1 block text-sm font-medium">
+        <div className="flex flex-col items-center">
+          <label
+            htmlFor="tab_size"
+            className="mb-1 block text-center text-sm font-medium"
+          >
             Tab Size
           </label>
           <input
@@ -271,7 +280,7 @@ export default function SettingsPage() {
             min="2"
             max="8"
             step="1"
-            className="w-full rounded-md border px-3 py-2 text-sm"
+            className="w-32 rounded-md border px-3 py-2 text-center text-sm"
             value={preferences.tab_size ?? 4}
             style={{ borderColor: "var(--primary)" }}
             onChange={(e) =>
@@ -284,8 +293,11 @@ export default function SettingsPage() {
         </div>
 
         {/* Line Numbers */}
-        <div className="flex items-center justify-between">
-          <label htmlFor="line_numbers" className="text-sm font-medium">
+        <div className="flex items-center justify-center gap-2">
+          <label
+            htmlFor="line_numbers"
+            className="text-center text-sm font-medium"
+          >
             Show Line Numbers
           </label>
           <input
