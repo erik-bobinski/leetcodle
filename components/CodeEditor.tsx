@@ -1,9 +1,3 @@
-/*TODO: 
-  add accessibility warning about editor's tab key 
-  interfering with its normal function of page navigation
-  https://codemirror.net/examples/tab/
-*/
-
 "use client";
 
 import { createTheme } from "thememirror";
@@ -109,24 +103,50 @@ export default function CodeEditor({
   // work to do after initial render
   useEffect(() => {
     async function fetchPreferences() {
-      const prefsFromDB = await getUser();
+      // 1. check for prefs in local storage
+      const localPrefs = localStorage.getItem("userPreferences");
+      if (localPrefs !== null) {
+        try {
+          const parsedPrefs = JSON.parse(localPrefs);
+          setPreferencesState(parsedPrefs);
+          if (parsedPrefs.language && parsedPrefs.language in languages) {
+            setLangKeyState(parsedPrefs.language);
+          }
+          if (parsedPrefs.vim_mode !== null) {
+            setVimState(parsedPrefs.vim_mode);
+          }
+          if (parsedPrefs.tab_size !== null) {
+            setTabState(indentUnit.of(" ".repeat(parsedPrefs.tab_size)));
+          }
+          return;
+        } catch (e) {
+          console.error("Failed to parse local userPrefernces: ", e);
+        }
+      }
 
-      // update react state to reflect any stored prefs
-      if (prefsFromDB) {
-        setPreferencesState(prefsFromDB);
+      // 2. resort to DB fetch
+      try {
+        const prefsFromDB = await getUser();
+        if (prefsFromDB) {
+          setPreferencesState(prefsFromDB);
+          if (prefsFromDB.language && prefsFromDB.language in languages) {
+            setLangKeyState(prefsFromDB.language as keyof typeof languages);
+          }
+          if (prefsFromDB.vim_mode !== null) {
+            setVimState(prefsFromDB.vim_mode);
+          }
+          if (prefsFromDB.tab_size !== null) {
+            setTabState(indentUnit.of(" ".repeat(prefsFromDB.tab_size)));
+          }
+          // save to local storage for future
+          localStorage.setItem("userPreferences", JSON.stringify(prefsFromDB));
 
-        if (prefsFromDB.language && prefsFromDB.language in languages) {
-          setLangKeyState(prefsFromDB.language as keyof typeof languages);
+          // font size is handled directly in the theme configuration
+        } else {
+          setPreferencesState(defaultPreferences);
         }
-        if (prefsFromDB.vim_mode !== null) {
-          setVimState(prefsFromDB.vim_mode);
-        }
-        if (prefsFromDB.tab_size !== null && prefsFromDB.tab_size !== 2) {
-          setTabState(indentUnit.of(" ".repeat(prefsFromDB.tab_size)));
-        }
-        // Font size is handled directly in the theme configuration
-      } else {
-        setPreferencesState(defaultPreferences);
+      } catch (e) {
+        console.error("Failed to get preferences from database");
       }
     }
 
@@ -198,12 +218,12 @@ export default function CodeEditor({
       /{{indent}}/g,
       indent
     );
+
     const view = new EditorView({
       doc: boilerplate,
       parent: editorRef.current,
       extensions: refreshExtensions(languageExtension)
     });
-
     viewRef.current = view;
     view.focus();
 

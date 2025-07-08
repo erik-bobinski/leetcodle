@@ -11,7 +11,6 @@ export async function updatePreferences(formData: FormData) {
     }
     const userId = user.id;
 
-    // process form data
     const rawFormData = Object.fromEntries(formData);
 
     const newPreferences = {
@@ -21,8 +20,6 @@ export async function updatePreferences(formData: FormData) {
       font_size: Number(rawFormData.font_size),
       tab_size: Number(rawFormData.tab_size)
     };
-
-    console.log(newPreferences);
 
     const { error } = await supabase
       .from("users")
@@ -35,6 +32,8 @@ export async function updatePreferences(formData: FormData) {
       console.error("Database error:", error);
       throw new Error(`Failed to update preferences: ${error.message}`);
     }
+
+    return newPreferences;
   } catch (error) {
     console.error("Error in updatePreferences:", error);
     throw new Error(error instanceof Error ? error.message : "Unknown error");

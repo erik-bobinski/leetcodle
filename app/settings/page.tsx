@@ -56,13 +56,22 @@ export default function SettingsPage() {
     try {
       setSaving(true);
       setMessage(null);
-      console.log("Before save - language:", preferences.language);
-      await updatePreferences(formData);
-      console.log("After save - language:", preferences.language);
+      let newPreferences = await updatePreferences(formData);
+      localStorage.setItem("userPreferences", JSON.stringify(newPreferences));
       setMessage({ type: "success", text: "Preferences saved successfully!" });
     } catch (error) {
       console.error("Error saving preferences:", error);
-      setMessage({ type: "error", text: "Sign in to save preferences ;)" });
+      if (
+        error instanceof DOMException &&
+        error.name === "QuotaExceededError"
+      ) {
+        setMessage({
+          type: "error",
+          text: "Failed to save preferences in your browser, storage may be disabled for this site in your settings"
+        });
+      } else {
+        setMessage({ type: "error", text: "Sign in to save preferences ;)" });
+      }
     } finally {
       setSaving(false);
     }

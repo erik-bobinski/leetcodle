@@ -17,15 +17,15 @@ export default function Home() {
     useState<Judge0ExecutionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleCodeChange = (code: string) => {
+  function handleCodeChange(code: string) {
     setCurrentCode(code);
-  };
+  }
 
-  const handleLanguageChange = (language: string) => {
+  function handleLanguageChange(language: string) {
     setCurrentLanguage(language);
-  };
+  }
 
-  const handleSubmit = async () => {
+  async function handleSubmit() {
     if (!currentCode.trim()) {
       setError("Please enter some code to submit");
       return;
@@ -61,7 +61,7 @@ export default function Home() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }
 
   return (
     <>
