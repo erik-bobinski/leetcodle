@@ -8,6 +8,7 @@ import { useState } from "react";
 import { languages } from "@/types/editor-languages";
 import { submitCode, pollExecutionResult } from "@/lib/judge0";
 import type { Judge0ExecutionResponse } from "@/types/judge0";
+import ReactMarkdown from "react-markdown";
 
 export default function Home() {
   const [currentCode, setCurrentCode] = useState("");
@@ -67,11 +68,14 @@ export default function Home() {
     <>
       {/* Problem Title and Description */}
       <div className="mt-6 mb-8 ml-6 text-center">
-        <h1 className="text-2xl font-bold">1. Today&apos;s Problem Title</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          This is a placeholder for the problem description. It will give
-          details about what you need to solve today.
-        </p>
+        <h1 className="text-2xl font-bold">Find the Missing Number</h1>
+        <ReactMarkdown>
+          {
+            "Given an array `nums` containing `n` distinct numbers in the range `[0, n]`, return the only number in the range that is missing from the array."
+          }
+        </ReactMarkdown>
+        <ReactMarkdown>{"Example Input: `nums = [3,0,1]"}</ReactMarkdown>
+        <ReactMarkdown>{"Example Output: `2`"}</ReactMarkdown>
       </div>
 
       <main className="flex flex-col md:flex-row">

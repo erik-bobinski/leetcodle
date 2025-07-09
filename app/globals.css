@@ -153,3 +153,8 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+
+/* inline code styling for markdown and code terms */
+code {
+  @apply bg-muted text-primary rounded px-1.5 py-0.5 font-mono text-[0.95em];
+}

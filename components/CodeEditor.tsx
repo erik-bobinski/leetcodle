@@ -146,7 +146,7 @@ export default function CodeEditor({
           setPreferencesState(defaultPreferences);
         }
       } catch (e) {
-        console.error("Failed to get preferences from database");
+        console.error("Failed to get preferences from database: ", e);
       }
     }
 

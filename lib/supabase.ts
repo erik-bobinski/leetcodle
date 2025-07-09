@@ -9,7 +9,7 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-// Types for our editor preferences
+// editor preferences
 export type User = {
   theme: string | null;
   font_size: number | null;
