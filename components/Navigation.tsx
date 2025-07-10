@@ -1,11 +1,31 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GearIcon, PinRightIcon } from "@radix-ui/react-icons";
 import { ModeToggle } from "@/components/ui/ModeToggle";
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-import React from "react";
+import {
+  SignInButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+  useClerk
+} from "@clerk/nextjs";
+import { useEffect } from "react";
 
 export default function Navigation() {
+  const { session } = useClerk();
+
+  // Clear localStorage user preferences when user signs out
+  useEffect(() => {
+    if (!session) {
+      // User is signed out, clear localStorage preferences
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("userPreferences");
+      }
+    }
+  }, [session]);
+
   // Shimmer placeholder component
   function ShimmerCircle() {
     return (

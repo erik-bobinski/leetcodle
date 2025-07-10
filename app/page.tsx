@@ -9,6 +9,7 @@ import { languages } from "@/types/editor-languages";
 import { submitCode, pollExecutionResult } from "@/lib/judge0";
 import type { Judge0ExecutionResponse } from "@/types/judge0";
 import ReactMarkdown from "react-markdown";
+import ExampleBox from "../components/ExampleBox";
 
 export default function Home() {
   const [currentCode, setCurrentCode] = useState("");
@@ -74,8 +75,7 @@ export default function Home() {
             "Given an array `nums` containing `n` distinct numbers in the range `[0, n]`, return the only number in the range that is missing from the array."
           }
         </ReactMarkdown>
-        <ReactMarkdown>{"Example Input: `nums = [3,0,1]"}</ReactMarkdown>
-        <ReactMarkdown>{"Example Output: `2`"}</ReactMarkdown>
+        <ExampleBox input="nums = [1,2,4,6]" output="[48,24,12,8]" />
       </div>
 
       <main className="flex flex-col md:flex-row">
