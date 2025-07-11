@@ -56,8 +56,17 @@ export default function SettingsPage() {
     try {
       setSaving(true);
       setMessage(null);
-      let newPreferences = await updatePreferences(formData);
-      localStorage.setItem("userPreferences", JSON.stringify(newPreferences));
+      const newPreferences = await updatePreferences(formData);
+      localStorage.setItem(
+        "userPreferences",
+        JSON.stringify({
+          language: newPreferences.language,
+          vim_mode: newPreferences.vim_mode,
+          font_size: newPreferences.font_size,
+          tab_size: newPreferences.tab_size,
+          line_numbers: newPreferences.line_numbers
+        })
+      );
       setMessage({ type: "success", text: "Preferences saved successfully!" });
     } catch (error) {
       console.error("Error saving preferences:", error);

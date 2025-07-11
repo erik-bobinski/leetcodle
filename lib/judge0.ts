@@ -1,20 +1,17 @@
-import {
-  Judge0ExecutionResponse,
-  Judge0SubmissionResponse
-} from "@/types/judge0";
+import { Judge0ExecutionResponse } from "@/types/judge0";
 
 /**
- * Submits code to Judge0 API server-side
+ * Submits code to Judge0 API server-side synchronously
  * @param source_code The code to execute
  * @param language_id The language ID
- * @returns A token that can be used to fetch the execution result, or an error
+ * @returns The execution result or an error
  */
 export async function submitCode(
   source_code: string,
   language_id: number
-): Promise<string> {
+): Promise<Judge0ExecutionResponse | string> {
   try {
-    const response = await fetch("/api/judge0", {
+    const response = await fetch("/api/judge0?wait=true", {
       method: "POST",
       headers: {
         "content-type": "application/json"
@@ -24,12 +21,11 @@ export async function submitCode(
         language_id
       })
     });
+    const data = (await response.json()) as Judge0ExecutionResponse;
     if (!response.ok) {
-      throw new Error(`${response.json()}`);
+      throw new Error(`${JSON.stringify(data)}`);
     }
-
-    const data = (await response.json()) as Judge0SubmissionResponse;
-    return data.token;
+    return data;
   } catch (error) {
     if (error instanceof Error) {
       console.error(error.message);

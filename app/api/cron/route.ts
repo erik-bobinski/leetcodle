@@ -3,13 +3,10 @@ import { supabase } from "@/lib/supabase";
 import {
   generateProblemDetails,
   generateReferenceSolution,
-  generateTestCases,
+  generateTestCasesInputs,
   generateHints
 } from "@/lib/gemini";
-import type {
-  ProblemDetails,
-  ReferenceSolution
-} from "@/types/problem-generation";
+import { submitCode } from "@/lib/judge0";
 
 export async function GET(request: NextRequest) {
   // 1. security check
@@ -21,17 +18,18 @@ export async function GET(request: NextRequest) {
   }
 
   // 2. problem details AI call
-  const problemDetails: ProblemDetails = await generateProblemDetails();
+  const problemDetails = await generateProblemDetails();
 
   // 3. reference solution AI call
-  const referenceSolution: ReferenceSolution = await generateReferenceSolution(
+  const referenceSolution = await generateReferenceSolution(
     problemDetails.description
   );
 
   // 4. test cases AI call
-  const testCases = await generateTestCases();
+  const testCasesInputs = await generateTestCasesInputs();
 
   // 5. generate expected outputs via judge0
+  const testsCasesOutputs = await submitCode(referenceSolution.Python, 71);
 
   // 6. hints AI call
   const hints = await generateHints();

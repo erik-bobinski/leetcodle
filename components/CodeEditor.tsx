@@ -139,7 +139,16 @@ export default function CodeEditor({
             setTabState(indentUnit.of(" ".repeat(prefsFromDB.tab_size)));
           }
           // save to local storage for future
-          localStorage.setItem("userPreferences", JSON.stringify(prefsFromDB));
+          localStorage.setItem(
+            "userPreferences",
+            JSON.stringify({
+              language: prefsFromDB.language,
+              vim_mode: prefsFromDB.vim_mode,
+              font_size: prefsFromDB.font_size,
+              tab_size: prefsFromDB.tab_size,
+              line_numbers: prefsFromDB.line_numbers
+            })
+          );
 
           // font size is handled directly in the theme configuration
         } else {
