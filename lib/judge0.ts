@@ -36,6 +36,28 @@ export async function submitCode(
   }
 }
 
+export async function generateTestCasesOutputs(
+  solutionsWithTestCases: Record<string, string>
+): Promise<Record<string, Judge0ExecutionResponse | string>> {
+  const results: Record<string, Judge0ExecutionResponse | string> = {};
+
+  // run all 5 solutions in parallel
+  const promises = Object.entries(solutionsWithTestCases).map(
+    async ([key, sourceCode]) => {
+      const result = await submitCode(sourceCode, 54);
+      return [key, result] as const;
+    }
+  );
+  const resolvedResults = await Promise.all(promises);
+
+  // Convert array of results back to object
+  for (const [key, result] of resolvedResults) {
+    results[key] = result;
+  }
+
+  return results;
+}
+
 /**
  * Fetches the execution result for a given submission token
  * @param token The submission token received from submitCode

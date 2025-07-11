@@ -45,10 +45,11 @@ export async function generateReferenceSolution(
       .map((lang) => lang.name)
       .join(
         ", "
-      )}. Preferrably write the solution within a solution function unless otherwise 
-      is necessary. Return the solutions in the following JSON format: {
-      Python: "Solution goes here",
-      Go: "Solution goes here",
+      )}. Write the solution within a function called solution. Ensure the code 
+      can be run if I were to copy and paste it into a blank file. 
+      Return the solutions in the following JSON format: {
+      python: "Solution goes here",
+      go: "Solution goes here",
       etc...
       }
     `
@@ -62,35 +63,36 @@ export async function generateReferenceSolution(
   return JSON.parse(content) as ReferenceSolution;
 }
 
-export async function generateTestCasesInputs(
+export async function generateTestCasesSolutions(
   problemDescription: string,
-  referenceSolution: ReferenceSolution
-) {
+  referenceSolution: string
+): Promise<Record<string, string>> {
   const ai = new GoogleGenAI({});
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents: `You are writing 5 test cases for the following coding problem: ${problemDescription}
-    Here is an efficient solution to the problem in Python: \`${referenceSolution.Python}\`
-    Provide 5 test case inputs to a solution that capture the unique edge-cases of this problem to 
-    ensure a solution is correct. Respond with JSON in the following structure, where the key is an 
-    index for the input, and the value is the test input itself: {
-    0: "nums = [1, 3, 5, 7], n = 3",
-    1: ""
+    Here is an efficient solution to the problem in Python: \`${referenceSolution}\`
+    Provide 5 test case inputs to the solution that captures the unique edge-cases of this problem to 
+    ensure a solution is correct. Respond with JSON where the key is the test case and the value is the 
+    source code for the efficient solution with the test case passed into it as input, so the code is ready 
+    to be run when I receive it. IMPORTANT: You MUST print the result of calling the solution function 
+    so that the output can be captured. There should be 5 test cases in the JSON response. 
+    Here is an example JSON response: {
+    "world": "def solution(str):
+              return 'hello ' + str
+            print(solution('world'))",
+    "python": "def solution(nums):
+              return 'hello ' + str(nums)
+            print(solution('python'))",
+    etc...
     }`
   });
+
   const content = response.text;
   if (!content) {
     console.error("No content received from AI model");
     throw new Error("No content received from AI model");
   }
-  return content;
-}
 
-export async function generateHints() {
-  const ai = new GoogleGenAI({});
-  const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: "Gotta come up with a prompt to put here..."
-  });
-  return response;
+  return JSON.parse(content) as Record<string, string>;
 }

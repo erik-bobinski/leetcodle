@@ -19,7 +19,7 @@ export type User = {
   language: string | null;
 };
 
-export const createClerkWebhookSupabaseClient = () =>
+export const createServiceRoleClient = () =>
   createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: {
       persistSession: false

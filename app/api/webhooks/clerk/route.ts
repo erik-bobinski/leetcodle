@@ -1,7 +1,7 @@
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { Webhook } from "svix";
-import { createClerkWebhookSupabaseClient } from "@/lib/supabase";
+import { createServiceRoleClient } from "@/lib/supabase";
 import type { User } from "@/lib/supabase";
 
 export async function POST(req: Request) {
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
   console.log(`🎯 Processing webhook event: ${eventType}`);
 
-  const supabase = createClerkWebhookSupabaseClient();
+  const supabase = createServiceRoleClient();
 
   if (eventType === "user.created") {
     const { id, email_addresses, username } = payload.data;

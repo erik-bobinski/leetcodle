@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClerkWebhookSupabaseClient } from "@/lib/supabase";
+import { createServiceRoleClient } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    const supabase = createClerkWebhookSupabaseClient();
+    const supabase = createServiceRoleClient();
 
     // Check if user exists in our database
     const { data, error } = await supabase
