@@ -214,7 +214,7 @@ export default function SettingsPage() {
           <select
             id="language"
             name="language"
-            className="w-56 rounded-md border px-3 py-2 text-center text-sm"
+            className="w-56 cursor-pointer rounded-md border px-3 py-2 text-center text-sm"
             value={preferences.language ?? "cpp"}
             style={{ borderColor: "var(--primary)" }}
             onChange={(e) =>

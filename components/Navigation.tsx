@@ -4,17 +4,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GearIcon, PinRightIcon } from "@radix-ui/react-icons";
 import { ModeToggle } from "@/components/ui/ModeToggle";
-import {
-  SignInButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-  useClerk
-} from "@clerk/nextjs";
+import { SignInButton, UserButton, useClerk, useAuth } from "@clerk/nextjs";
 import { useEffect } from "react";
 
 export default function Navigation() {
   const { session } = useClerk();
+  const { isLoaded, isSignedIn } = useAuth();
 
   // Clear localStorage user preferences when user signs out
   useEffect(() => {
@@ -59,17 +54,18 @@ export default function Navigation() {
             </Button>
           </Link>
           <ModeToggle />
-          <SignedOut>
+          {!isLoaded ? (
+            <ShimmerCircle />
+          ) : isSignedIn ? (
+            <UserButton fallback={<ShimmerCircle />} />
+          ) : (
             <SignInButton mode="modal">
               <Button className="hover:cursor-pointer">
                 Sign In
                 <PinRightIcon className="h-4 w-4" />
               </Button>
             </SignInButton>
-          </SignedOut>
-          <SignedIn>
-            <UserButton fallback={<ShimmerCircle />} />
-          </SignedIn>
+          )}
         </div>
       </div>
     </header>

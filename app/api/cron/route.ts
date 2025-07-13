@@ -45,12 +45,13 @@ export async function GET(request: NextRequest) {
   Object.entries(testCasesOutputs).forEach(
     ([testCaseInput, executionResult]) => {
       if (
+        // success output
         typeof executionResult === "object" &&
         executionResult.stdout !== null
       ) {
         testCases[testCaseInput] = executionResult.stdout.trim();
       } else if (typeof executionResult === "string") {
-        // If executionResult is a string, it's an error message
+        // error output
         console.error(
           `Test case "${testCaseInput}" failed: ${executionResult}`
         );
@@ -58,10 +59,10 @@ export async function GET(request: NextRequest) {
           `Test case "${testCaseInput}" failed: ${executionResult}`
         );
       } else if (
+        // null output
         typeof executionResult === "object" &&
         executionResult.stdout === null
       ) {
-        // If stdout is null, the execution didn't produce any output
         console.error(
           `Test case "${testCaseInput}" produced no output (stdout is null)`
         );

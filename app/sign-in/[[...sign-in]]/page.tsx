@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useSignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import Link from "next/link";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -119,12 +121,16 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-md space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight">
+    <div className="flex min-h-screen items-start justify-center">
+      <div className="mt-8 w-full max-w-md space-y-8">
+        <div className="flex items-center justify-between">
+          <Link href="/">
+            <ArrowLeftIcon className="h-6 w-6 cursor-pointer transition-opacity hover:opacity-50" />
+          </Link>
+          <h2 className="text-3xl font-bold tracking-tight">
             Sign in to your account
           </h2>
+          <div className="w-6"></div> {/* Spacer to balance the layout */}
         </div>
 
         {/* Social Login Buttons */}
@@ -132,7 +138,7 @@ export default function SignInPage() {
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="group relative flex w-full justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+            className="group relative flex w-full cursor-pointer justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
           >
             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -158,7 +164,7 @@ export default function SignInPage() {
           <button
             onClick={handleGithubSignIn}
             disabled={isLoading}
-            className="group relative flex w-full justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+            className="group relative flex w-full cursor-pointer justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
           >
             <svg
               className="mr-2 h-5 w-5"
@@ -176,7 +182,7 @@ export default function SignInPage() {
             <div className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-2 text-gray-500">
+            <span className="bg-white px-2 text-black">
               Or continue with email
             </span>
           </div>
@@ -228,7 +234,7 @@ export default function SignInPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+              className="group relative flex w-full cursor-pointer justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
             >
               {isLoading ? "Signing in..." : "Sign in with email"}
             </button>
