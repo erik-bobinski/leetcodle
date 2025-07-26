@@ -4,12 +4,14 @@ import CodeEditor from "../components/CodeEditor";
 import { PlayIcon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 import Wordle from "@/components/Wordle";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { languages } from "@/types/editor-languages";
 import { submitCode, pollExecutionResult } from "@/lib/judge0";
 import type { Judge0ExecutionResponse } from "@/types/judge0";
 import ReactMarkdown from "react-markdown";
 import ExampleBox from "../components/ExampleBox";
+import { getTodaysProblem } from "./actions/get-problem";
+import type { Problem } from "@/types/problem-generation";
 
 export default function Home() {
   const [currentCode, setCurrentCode] = useState("");
@@ -18,6 +20,26 @@ export default function Home() {
   const [executionResult, setExecutionResult] =
     useState<Judge0ExecutionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [problemError, setProblemError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const result = await getTodaysProblem();
+        if ("code" in result) {
+          setProblemError(result.message);
+        } else {
+          setProblem(result);
+        }
+      } catch {
+        setProblemError("Failed to load today's problem.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   function handleCodeChange(code: string) {
     setCurrentCode(code);
@@ -42,11 +64,12 @@ export default function Home() {
         languages[currentLanguage as keyof typeof languages].language_id;
       const token = await submitCode(currentCode, languageId);
 
-      if (typeof token === "string" && token.startsWith("Error")) {
+      if (typeof token === "string") {
         setError(token);
         return;
       }
 
+      //TODO: stop using polling for code submission
       // Poll for results
       const result = await pollExecutionResult(token);
 
@@ -69,13 +92,20 @@ export default function Home() {
     <>
       {/* Problem Title and Description */}
       <div className="mt-6 mb-8 ml-6 text-center">
-        <h1 className="text-2xl font-bold">Find the Missing Number</h1>
-        <ReactMarkdown>
-          {
-            "Given an array `nums` containing `n` distinct numbers in the range `[0, n]`, return the only number in the range that is missing from the array."
-          }
-        </ReactMarkdown>
-        <ExampleBox input="nums = [1,2,4,6]" output="[48,24,12,8]" />
+        {loading ? (
+          <div>Loading...</div>
+        ) : problemError ? (
+          <div className="text-red-500">{problemError}</div>
+        ) : problem ? (
+          <>
+            <h1 className="text-2xl font-bold">{problem.title}</h1>
+            <ReactMarkdown>{problem.description}</ReactMarkdown>
+            <ExampleBox
+              input={problem.example_input}
+              output={problem.example_output}
+            />
+          </>
+        ) : null}
       </div>
 
       <main className="flex flex-col md:flex-row">

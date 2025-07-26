@@ -5,6 +5,25 @@ import type {
   ReferenceSolution
 } from "@/types/problem-generation";
 
+// Helper function to clean AI response and extract JSON
+function extractJsonFromResponse(content: string): string {
+  // Remove markdown code blocks if present
+  let cleaned = content.trim();
+
+  // Remove ```json and ``` markers
+  if (cleaned.startsWith("```json")) {
+    cleaned = cleaned.replace(/^```json\s*/, "");
+  }
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```\s*/, "");
+  }
+  if (cleaned.endsWith("```")) {
+    cleaned = cleaned.replace(/\s*```$/, "");
+  }
+
+  return cleaned.trim();
+}
+
 export async function generateProblemDetails(): Promise<ProblemDetails> {
   const ai = new GoogleGenAI({});
   const response = await ai.models.generateContent({
@@ -12,11 +31,15 @@ export async function generateProblemDetails(): Promise<ProblemDetails> {
     contents: `You are creating a daily coding problem in the style of leetcode
     with easy to medium difficulty. Generate the problem's title, description, an example input, 
     and its corresponding example output. For all code terms, use inline markdown code formatting 
-    (wrap the term in backticks, etc). Return your response in JSON format as follows: {
-    title: "Title goes here",
-    description: "Description goes here",
-    exampleInput: "Example input goes here",
-    exampleOutput: "Example output goes here"
+    (wrap the term in backticks, etc). 
+
+    IMPORTANT: Return ONLY valid JSON without any markdown formatting, code blocks, or extra text.
+    Return your response in this exact JSON format:
+    {
+      "title": "Title goes here",
+      "description": "Description goes here", 
+      "exampleInput": "Example input goes here",
+      "exampleOutput": "Example output goes here"
     }`,
     config: {
       temperature: 1.5
@@ -29,7 +52,8 @@ export async function generateProblemDetails(): Promise<ProblemDetails> {
     throw new Error("No content received from AI model");
   }
 
-  return JSON.parse(content) as ProblemDetails;
+  const cleanedContent = extractJsonFromResponse(content);
+  return JSON.parse(cleanedContent) as ProblemDetails;
 }
 
 export async function generateReferenceSolution(
@@ -47,10 +71,21 @@ export async function generateReferenceSolution(
         ", "
       )}. Write the solution within a function called solution. Ensure the code 
       can be run if I were to copy and paste it into a blank file. 
-      Return the solutions in the following JSON format: {
-      python: "Solution goes here",
-      go: "Solution goes here",
-      etc...
+
+      IMPORTANT NOTES:
+      - For Python: Use Python 3.8 compatible syntax. Use 'List' instead of 'list' for type hints, 
+        and import 'List' from 'typing' if needed. Avoid using 'list[str]' syntax.
+      - For all languages: Ensure the code is complete and runnable.
+
+      IMPORTANT: Return ONLY valid JSON without any markdown formatting, code blocks, or extra text.
+      Return the solutions in this exact JSON format:
+      {
+        "python": "Solution goes here",
+        "go": "Solution goes here",
+        "javascript": "Solution goes here",
+        "java": "Solution goes here",
+        "cpp": "Solution goes here",
+        "rust": "Solution goes here"
       }
     `
   });
@@ -60,7 +95,9 @@ export async function generateReferenceSolution(
     console.error("No content received from AI model");
     throw new Error("No content received from AI model");
   }
-  return JSON.parse(content) as ReferenceSolution;
+
+  const cleanedContent = extractJsonFromResponse(content);
+  return JSON.parse(cleanedContent) as ReferenceSolution;
 }
 
 export async function generateTestCasesSolutions(
@@ -77,14 +114,17 @@ export async function generateTestCasesSolutions(
     source code for the efficient solution with the test case passed into it as input, so the code is ready 
     to be run when I receive it. IMPORTANT: You MUST print the result of calling the solution function 
     so that the output can be captured. There should be 5 test cases in the JSON response. 
-    Here is an example JSON response: {
-    "world": "def solution(str):
-              return 'hello ' + str
-            print(solution('world'))",
-    "python": "def solution(nums):
-              return 'hello ' + str(nums)
-            print(solution('python'))",
-    etc...
+
+    IMPORTANT NOTES:
+    - For Python: Use Python 3.8 compatible syntax. Use 'List' instead of 'list' for type hints, 
+      and import 'List' from 'typing' if needed. Avoid using 'list[str]' syntax.
+    - Ensure all code is complete and runnable.
+
+    IMPORTANT: Return ONLY valid JSON without any markdown formatting, code blocks, or extra text.
+    Here is an example JSON response:
+    {
+      "world": "def solution(str):\\n    return 'hello ' + str\\nprint(solution('world'))",
+      "python": "def solution(nums):\\n    return 'hello ' + str(nums)\\nprint(solution('python'))"
     }`
   });
 
@@ -94,5 +134,6 @@ export async function generateTestCasesSolutions(
     throw new Error("No content received from AI model");
   }
 
-  return JSON.parse(content) as Record<string, string>;
+  const cleanedContent = extractJsonFromResponse(content);
+  return JSON.parse(cleanedContent) as Record<string, string>;
 }

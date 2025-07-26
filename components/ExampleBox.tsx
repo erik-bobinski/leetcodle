@@ -1,11 +1,10 @@
-import React from "react";
-
-interface ExampleBoxProps {
+export default function ExampleBox({
+  input,
+  output
+}: {
   input: string;
   output: string;
-}
-
-export default function ExampleBox({ input, output }: ExampleBoxProps) {
+}) {
   return (
     <div className="my-6 flex flex-col items-center">
       <h2 className="mb-4 text-xl font-bold">{"Example:"}</h2>

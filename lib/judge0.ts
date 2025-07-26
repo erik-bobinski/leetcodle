@@ -1,5 +1,15 @@
 import { Judge0ExecutionResponse } from "@/types/judge0";
 
+// Helper function to get the base URL for API calls
+function getBaseUrl(): string {
+  // In development, use localhost
+  if (process.env.NODE_ENV === "development") {
+    return "http://localhost:3000";
+  }
+  // In production, use the deployed URL or construct from headers
+  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+}
+
 /**
  * Submits code to Judge0 API server-side synchronously
  * @param source_code The code to execute
@@ -11,7 +21,8 @@ export async function submitCode(
   language_id: number
 ): Promise<Judge0ExecutionResponse | string> {
   try {
-    const response = await fetch("/api/judge0?wait=true", {
+    const baseUrl = getBaseUrl();
+    const response = await fetch(`${baseUrl}/api/judge0?wait=true`, {
       method: "POST",
       headers: {
         "content-type": "application/json"
@@ -41,18 +52,25 @@ export async function generateTestCasesOutputs(
 ): Promise<Record<string, Judge0ExecutionResponse | string>> {
   const results: Record<string, Judge0ExecutionResponse | string> = {};
 
-  // run all 5 solutions in parallel
-  const promises = Object.entries(solutionsWithTestCases).map(
-    async ([key, sourceCode]) => {
-      const result = await submitCode(sourceCode, 54);
-      return [key, result] as const;
-    }
-  );
-  const resolvedResults = await Promise.all(promises);
+  // Run solutions sequentially to avoid rate limiting
+  for (const [key, sourceCode] of Object.entries(solutionsWithTestCases)) {
+    console.log(`Executing test case: ${key}`);
 
-  // Convert array of results back to object
-  for (const [key, result] of resolvedResults) {
+    // Add delay between requests to respect rate limits
+    if (Object.keys(results).length > 0) {
+      console.log("Waiting 0.5 seconds before next request...");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    const result = await submitCode(sourceCode, 71); // use python
     results[key] = result;
+
+    // If we got an error, log it but continue with other test cases
+    if (typeof result === "string") {
+      console.error(`Test case ${key} failed: ${result}`);
+    } else {
+      console.log(`Test case ${key} completed successfully`);
+    }
   }
 
   return results;
@@ -67,7 +85,8 @@ export async function getExecutionResult(
   token: string
 ): Promise<Judge0ExecutionResponse | string> {
   try {
-    const response = await fetch(`/api/judge0?token=${token}`);
+    const baseUrl = getBaseUrl();
+    const response = await fetch(`${baseUrl}/api/judge0?token=${token}`);
     const data = (await response.json()) as Judge0ExecutionResponse;
     if (!response.ok) {
       throw new Error(`${data}`);
@@ -93,7 +112,8 @@ export async function pollExecutionResult(
   token: string
 ): Promise<Judge0ExecutionResponse | string> {
   try {
-    const response = await fetch("/api/judge0", {
+    const baseUrl = getBaseUrl();
+    const response = await fetch(`${baseUrl}/api/judge0`, {
       method: "PUT",
       headers: {
         "content-type": "application/json"

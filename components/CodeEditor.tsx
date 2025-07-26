@@ -38,6 +38,7 @@ import { vim } from "@replit/codemirror-vim";
 import { LanguageSupport } from "@codemirror/language";
 import type { User } from "@/lib/supabase";
 import { getUser } from "../app/actions/get-preferences";
+import CodeMirror from "@uiw/react-codemirror";
 
 const leetcodleTheme = createTheme({
   variant: "dark",
@@ -69,7 +70,6 @@ const leetcodleTheme = createTheme({
 });
 
 const defaultPreferences = {
-  user_id: null,
   theme: null,
   font_size: null,
   tab_size: null,
@@ -78,15 +78,13 @@ const defaultPreferences = {
   language: "cpp"
 };
 
-interface CodeEditorProps {
-  onCodeChange?: (code: string) => void;
-  onLanguageChange?: (language: string) => void;
-}
-
 export default function CodeEditor({
   onCodeChange,
   onLanguageChange
-}: CodeEditorProps) {
+}: {
+  onCodeChange?: (code: string) => void;
+  onLanguageChange?: (language: string) => void;
+}) {
   // ref to codemirror view's container
   const editorRef = useRef<HTMLDivElement>(null);
 

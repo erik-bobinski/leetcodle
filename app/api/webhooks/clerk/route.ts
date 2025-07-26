@@ -5,8 +5,6 @@ import { createServiceRoleClient } from "@/lib/supabase";
 import type { User } from "@/lib/supabase";
 
 export async function POST(req: Request) {
-  console.log("🔔 Clerk webhook endpoint hit!");
-
   // Get the headers
   const headerPayload = await headers();
   const svix_id = headerPayload.get("svix-id");
@@ -27,11 +25,9 @@ export async function POST(req: Request) {
     });
   }
 
-  // Get the body
   const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  // Create a new Svix instance with your secret
   const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET!);
 
   let evt: WebhookEvent;
@@ -67,7 +63,6 @@ export async function POST(req: Request) {
       JSON.stringify(payload.data, null, 2)
     );
 
-    // Insert into your 'users' table
     const { error } = await supabase.from("users").insert({
       user_id: id,
       email: email_addresses[0]?.email_address,
