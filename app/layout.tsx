@@ -3,8 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
-import { ThemeProvider } from "@/components/theme-provider";
 import Navigation from "@/components/Navigation";
+import Providers from "@/app/Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,17 +43,12 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           suppressHydrationWarning
         >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
+          <Providers>
             <div className="mx-auto px-4 py-4 md:px-6 lg:px-8">
               <Navigation />
             </div>
             {children}
-          </ThemeProvider>
+          </Providers>
         </body>
       </html>
     </ClerkProvider>

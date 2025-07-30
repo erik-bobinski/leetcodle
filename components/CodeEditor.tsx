@@ -2,7 +2,7 @@
 
 import { createTheme } from "thememirror";
 import { tags as t } from "@lezer/highlight";
-import { EditorState, StateEffect } from "@codemirror/state";
+import { EditorState } from "@codemirror/state";
 import {
   EditorView,
   keymap,
@@ -33,12 +33,14 @@ import { lintKeymap } from "@codemirror/lint";
 import { indentWithTab } from "@codemirror/commands";
 import { indentUnit } from "@codemirror/language";
 import { languages } from "@/types/editor-languages";
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { vim } from "@replit/codemirror-vim";
-import { LanguageSupport } from "@codemirror/language";
-import type { User } from "@/lib/supabase";
+// import { LanguageSupport } from "@codemirror/language";
 import { getUser } from "../app/actions/get-preferences";
 import CodeMirror from "@uiw/react-codemirror";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { PlayIcon } from "@radix-ui/react-icons";
 
 const leetcodleTheme = createTheme({
   variant: "dark",
@@ -69,104 +71,103 @@ const leetcodleTheme = createTheme({
   ]
 });
 
-const defaultPreferences = {
-  theme: null,
-  font_size: null,
-  tab_size: null,
-  line_numbers: true,
-  vim_mode: false,
-  language: "cpp"
-};
+export default function CodeEditor() {
+  function processBoilerplate(boilerplate: string, tabSize: number = 2) {
+    return boilerplate.replace(/\{\{indent\}\}/g, " ".repeat(tabSize));
+  }
 
-export default function CodeEditor({
-  onCodeChange,
-  onLanguageChange
-}: {
-  onCodeChange?: (code: string) => void;
-  onLanguageChange?: (language: string) => void;
-}) {
-  // ref to codemirror view's container
-  const editorRef = useRef<HTMLDivElement>(null);
+  const [langKey, setLangKey] = useState<keyof typeof languages>("cpp");
+  const [isVim, setIsVim] = useState(false);
+  const [tabSizeValue, setTabSizeValue] = useState(2);
+  const [code, setCode] = useState(
+    processBoilerplate(languages[langKey].boilerplate, tabSizeValue)
+  );
+  const [tabSize, setTabSize] = useState(indentUnit.of("  "));
+  const [fontSize, setFontSize] = useState<number | null>(null);
+  const [isLineNumbers, setIsLineNumbers] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ref to the codemirror view object
-  const viewRef = useRef<EditorView | null>(null);
-
-  const [langKeyState, setLangKeyState] =
-    useState<keyof typeof languages>("cpp");
-  const [vimState, setVimState] = useState(false);
-  const [preferencesState, setPreferencesState] = useState<User | null>(null);
-  const languageExtension = languages[langKeyState].extension();
-  const [tabState, setTabState] = useState(indentUnit.of("  "));
-
-  // work to do after initial render
-  useEffect(() => {
-    async function fetchPreferences() {
-      // 1. check for prefs in local storage
-      const localPrefs = localStorage.getItem("userPreferences");
-      if (localPrefs !== null) {
-        try {
-          const parsedPrefs = JSON.parse(localPrefs);
-          setPreferencesState(parsedPrefs);
-          if (parsedPrefs.language && parsedPrefs.language in languages) {
-            setLangKeyState(parsedPrefs.language);
-          }
-          if (parsedPrefs.vim_mode !== null) {
-            setVimState(parsedPrefs.vim_mode);
-          }
-          if (parsedPrefs.tab_size !== null) {
-            setTabState(indentUnit.of(" ".repeat(parsedPrefs.tab_size)));
-          }
-          return;
-        } catch (e) {
-          console.error("Failed to parse local userPrefernces: ", e);
-        }
-      }
-
-      // 2. resort to DB fetch
+  async function fetchPreferences() {
+    // 1. check for prefs in local storage
+    const localPrefs = localStorage.getItem("userPreferences");
+    if (localPrefs !== null) {
       try {
-        const prefsFromDB = await getUser();
-        if (prefsFromDB) {
-          setPreferencesState(prefsFromDB);
-          if (prefsFromDB.language && prefsFromDB.language in languages) {
-            setLangKeyState(prefsFromDB.language as keyof typeof languages);
-          }
-          if (prefsFromDB.vim_mode !== null) {
-            setVimState(prefsFromDB.vim_mode);
-          }
-          if (prefsFromDB.tab_size !== null) {
-            setTabState(indentUnit.of(" ".repeat(prefsFromDB.tab_size)));
-          }
-          // save to local storage for future
-          localStorage.setItem(
-            "userPreferences",
-            JSON.stringify({
-              language: prefsFromDB.language,
-              vim_mode: prefsFromDB.vim_mode,
-              font_size: prefsFromDB.font_size,
-              tab_size: prefsFromDB.tab_size,
-              line_numbers: prefsFromDB.line_numbers
-            })
-          );
-
-          // font size is handled directly in the theme configuration
-        } else {
-          setPreferencesState(defaultPreferences);
+        const parsedPrefs = JSON.parse(localPrefs);
+        if (parsedPrefs.language && parsedPrefs.language in languages) {
+          setLangKey(parsedPrefs.language);
         }
+        if (parsedPrefs.vim_mode !== null) {
+          setIsVim(parsedPrefs.vim_mode);
+        }
+        if (parsedPrefs.tab_size !== null) {
+          setTabSizeValue(parsedPrefs.tab_size);
+          setTabSize(indentUnit.of(" ".repeat(parsedPrefs.tab_size)));
+        }
+        if (parsedPrefs.font_size !== null) {
+          setFontSize(parsedPrefs.font_size);
+        }
+        if (parsedPrefs.line_numbers !== null) {
+          setIsLineNumbers(parsedPrefs.line_numbers);
+        }
+        return "ok";
       } catch (e) {
-        console.error("Failed to get preferences from database: ", e);
+        console.error("Failed to parse local userPrefernces: ", e);
       }
     }
 
-    fetchPreferences();
-  }, []);
+    // 2. resort to DB fetch
+    try {
+      const prefsFromDB = await getUser();
+      if (prefsFromDB) {
+        if (prefsFromDB.language && prefsFromDB.language in languages) {
+          setLangKey(prefsFromDB.language as keyof typeof languages);
+        }
+        if (prefsFromDB.vim_mode !== null) {
+          setIsVim(prefsFromDB.vim_mode);
+        }
+        if (prefsFromDB.tab_size !== null) {
+          setTabSizeValue(prefsFromDB.tab_size);
+          setTabSize(indentUnit.of(" ".repeat(prefsFromDB.tab_size)));
+        }
+        if (prefsFromDB.font_size !== null) {
+          setFontSize(prefsFromDB.font_size);
+        }
+        if (prefsFromDB.line_numbers !== null) {
+          setIsLineNumbers(prefsFromDB.line_numbers);
+        }
+        localStorage.setItem(
+          "userPreferences",
+          JSON.stringify({
+            language: prefsFromDB.language,
+            vim_mode: prefsFromDB.vim_mode,
+            font_size: prefsFromDB.font_size,
+            tab_size: prefsFromDB.tab_size,
+            line_numbers: prefsFromDB.line_numbers
+          })
+        );
+      }
+      return "ok";
+    } catch (e) {
+      console.error("Failed to get preferences from database: ", e);
+    }
+  }
 
-  // helper to update editor config
-  function refreshExtensions(lang: LanguageSupport) {
+  const { isLoading, error } = useQuery({
+    queryKey: ["fetchPreferences"],
+    queryFn: fetchPreferences,
+    refetchOnMount: "always"
+  });
+
+  // Update boilerplate when tab size changes
+  useEffect(() => {
+    setCode(processBoilerplate(languages[langKey].boilerplate, tabSizeValue));
+  }, [langKey, tabSizeValue]);
+
+  const extensions = useMemo(() => {
     return [
-      lang,
-      ...(vimState ? [vim()] : []),
-      // Only add lineNumbers if enabled in preferences
-      ...(preferencesState?.line_numbers !== false ? [lineNumbers()] : []),
+      languages[langKey].extension(),
+      ...(isVim ? [vim()] : []),
+      lineNumbers(),
       foldGutter(),
       highlightSpecialChars(),
       history(),
@@ -183,7 +184,7 @@ export default function CodeEditor({
       highlightActiveLine(),
       highlightActiveLineGutter(),
       highlightSelectionMatches(),
-      tabState,
+      tabSize,
       keymap.of([
         ...closeBracketsKeymap,
         ...defaultKeymap,
@@ -202,95 +203,40 @@ export default function CodeEditor({
         },
         ".cm-content": {
           fontFamily: "var(--font-mono)",
-          fontSize: preferencesState?.font_size
-            ? `${preferencesState.font_size}px`
-            : null
+          fontSize: fontSize ? `${fontSize}px` : null
         },
-        ".cm-tab": {
-          // Set tab size based on preferences
-          width: preferencesState?.tab_size
-            ? `${preferencesState.tab_size}ch`
-            : null
-        }
+        ...(isLineNumbers
+          ? {}
+          : {
+              ".cm-gutters": {
+                display: "none"
+              }
+            })
       })
     ];
+  }, [isVim, langKey, fontSize, isLineNumbers, tabSize]);
+
+  async function handleSubmit() {
+    if (!code.trim() || code === languages[langKey].boilerplate) {
+      alert("Write your program before submitting!");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    // submit code for grading
+    try {
+      setIsSubmitting(true);
+      // const languageId = languages[langKey].language_id;
+      // const token = await submitCode(currentCode, languageId);
+    } catch (e) {
+      alert(e);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  // init the editor
-  useEffect(() => {
-    if (!editorRef.current || viewRef.current) return;
-
-    const indent = " ".repeat(preferencesState?.tab_size || 2);
-    const boilerplate = languages[langKeyState].boilerplate.replace(
-      /{{indent}}/g,
-      indent
-    );
-
-    const view = new EditorView({
-      doc: boilerplate,
-      parent: editorRef.current,
-      extensions: refreshExtensions(languageExtension)
-    });
-    viewRef.current = view;
-    view.focus();
-
-    // Call onCodeChange with initial content
-    if (onCodeChange) {
-      onCodeChange(boilerplate);
-    }
-    if (onLanguageChange) {
-      onLanguageChange(langKeyState);
-    }
-  }, [preferencesState !== null]); // re-init when prefs are set
-
-  // Listen for code changes
-  useEffect(() => {
-    if (!viewRef.current || !onCodeChange) return;
-
-    const view = viewRef.current;
-    const updateListener = EditorView.updateListener.of((update) => {
-      if (update.docChanged) {
-        onCodeChange(update.state.doc.toString());
-      }
-    });
-
-    view.dispatch({
-      effects: StateEffect.reconfigure.of([
-        ...refreshExtensions(languageExtension),
-        updateListener
-      ])
-    });
-  }, [onCodeChange, languageExtension]);
-
-  // handle client-side editor config changes
-  // i.e. lang selector, vim toggle
-  useEffect(() => {
-    if (!viewRef.current) return;
-
-    const view = viewRef.current;
-    const indent = " ".repeat(preferencesState?.tab_size || 2);
-    const newDoc = languages[langKeyState].boilerplate.replace(
-      /{{indent}}/g,
-      indent
-    );
-
-    view.dispatch({
-      changes: {
-        from: 0,
-        to: view.state.doc.length,
-        insert: newDoc
-      }
-    });
-
-    view.dispatch({
-      effects: StateEffect.reconfigure.of(refreshExtensions(languageExtension))
-    });
-
-    view.focus();
-  }, [langKeyState, vimState, tabState]);
-
-  // initial loading state
-  if (preferencesState === null) {
+  if (isLoading) {
     return (
       <div className="flex w-full flex-col gap-2">
         <div className="mb-2 flex gap-2">
@@ -312,40 +258,120 @@ export default function CodeEditor({
         />
       </div>
     );
-  }
-
-  return (
-    <div className="w-full">
-      <div className="mb-2 flex gap-2">
-        <select
-          value={langKeyState}
-          onChange={(e) => {
-            const newLang = e.target.value as keyof typeof languages;
-            setLangKeyState(newLang);
-            if (onLanguageChange) {
-              onLanguageChange(newLang);
-            }
+  } else if (error) {
+    return (
+      <div className="flex w-full flex-col gap-2">
+        <div className="mb-2 flex gap-2">
+          <div
+            className="shimmer h-8 w-32 rounded"
+            style={{ backgroundColor: "#1b222c" }}
+          />
+          <div
+            className="shimmer h-8 w-24 rounded"
+            style={{ backgroundColor: "#1b222c" }}
+          />
+        </div>
+        <div
+          className="flex h-[500px] w-full items-center justify-center rounded border border-red-500/20 bg-[#1b222c] p-6"
+          style={{
+            boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)"
           }}
-          className="cursor-pointer rounded border border-[#2d3a4e] bg-[#1b222c] p-1 text-[#a6accd] transition-colors hover:border-[#4b526d] hover:bg-[#222b3c]"
         >
-          {Object.entries(languages).map(([key, lang]) => (
-            <option key={key} value={key}>
-              {lang.name} ({lang.version})
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={() => setVimState(!vimState)}
-          className={`cursor-pointer rounded border px-2 py-1 transition-colors ${
-            vimState
-              ? "border-[#4b526d] bg-[#2d3a4e] text-[#a6accd] hover:border-[#5c6370] hover:bg-[#364458]"
-              : "border-[#2d3a4e] bg-[#1b222c] text-[#a6accd] hover:border-[#4b526d] hover:bg-[#222b3c]"
-          }`}
-        >
-          {vimState ? "Vim: On" : "Vim: Off"}
-        </button>
+          <div className="text-center">
+            <div className="mb-4 text-red-400">
+              <svg
+                className="mx-auto h-12 w-12"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+            </div>
+            <h3 className="mb-2 text-lg font-semibold text-[#a6accd]">
+              Failed to Load Editor Preferences
+            </h3>
+            <p className="mb-4 text-sm text-[#4b526d]">
+              Unable to load your editor settings. Please try refreshing the
+              page.
+            </p>
+            {error && (
+              <div className="mb-4 rounded border border-red-500/20 bg-red-500/5 p-3">
+                <p className="mb-2 text-xs font-medium text-red-400">
+                  Error Details:
+                </p>
+                <pre className="text-xs break-words whitespace-pre-wrap text-[#4b526d]">
+                  {error instanceof Error ? error.message : String(error)}
+                </pre>
+              </div>
+            )}
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded border border-[#2d3a4e] bg-[#1b222c] px-4 py-2 text-sm text-[#a6accd] transition-colors hover:border-[#4b526d] hover:bg-[#222b3c]"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
       </div>
-      <div ref={editorRef} />
+    );
+  }
+  return (
+    <div>
+      <div className="w-full">
+        <div className="mb-2 flex gap-2">
+          <select
+            value={langKey}
+            onChange={(e) => {
+              const newLang = e.target.value as keyof typeof languages;
+              setLangKey(newLang);
+            }}
+            className="cursor-pointer rounded border border-[#2d3a4e] bg-[#1b222c] p-1 text-[#a6accd] transition-colors hover:border-[#4b526d] hover:bg-[#222b3c]"
+          >
+            {Object.entries(languages).map(([key, lang]) => (
+              <option key={key} value={key}>
+                {lang.name} ({lang.version})
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => setIsVim(!isVim)}
+            className={`cursor-pointer rounded border px-2 py-1 transition-colors ${
+              isVim
+                ? "border-[#4b526d] bg-[#2d3a4e] text-[#a6accd] hover:border-[#5c6370] hover:bg-[#364458]"
+                : "border-[#2d3a4e] bg-[#1b222c] text-[#a6accd] hover:border-[#4b526d] hover:bg-[#222b3c]"
+            }`}
+          >
+            {isVim ? "Vim: On" : "Vim: Off"}
+          </button>
+        </div>
+        <CodeMirror
+          extensions={extensions}
+          value={code}
+          onChange={(value) => {
+            setCode(value);
+          }}
+          theme={leetcodleTheme}
+          tabIndex={tabSizeValue}
+        />
+      </div>
+      <div className="flex justify-start pt-2">
+        <Button
+          type="button"
+          className="flex cursor-pointer items-center gap-2"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          <PlayIcon className="h-5 w-5" />
+          {isSubmitting ? "Running..." : "Submit"}
+        </Button>
+      </div>
     </div>
   );
 }

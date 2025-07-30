@@ -10,7 +10,10 @@ export interface ReferenceSolution {
 }
 
 export interface Problem {
-  problemDetails: ProblemDetails;
-  referenceSolution: ReferenceSolution;
+  title: string;
+  description: string;
+  example_input: string;
+  example_output: string;
+  [languageName: string]: string;
   activeDate: string;
 }

@@ -1,56 +1,98 @@
 "use client";
 
 import { getUser } from "../actions/get-preferences";
-import { useEffect, useState } from "react";
-import { User } from "@/lib/supabase";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { updatePreferences } from "../actions/update-preferences";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { languages } from "@/types/editor-languages";
+import { useQuery } from "@tanstack/react-query";
 
 export default function SettingsPage() {
-  const [preferences, setPreferences] = useState<User>({
-    theme: null,
-    font_size: 14,
-    tab_size: 4,
-    line_numbers: true,
-    vim_mode: false,
-    language: "cpp"
-  });
-  const [loading, setLoading] = useState(true);
+  const [langKey, setLangKey] = useState<keyof typeof languages>("cpp");
+  const [isVim, setIsVim] = useState(false);
+  const [tabSizeValue, setTabSizeValue] = useState(2);
+  const [fontSize, setFontSize] = useState<number | null>(null);
+  const [isLineNumbers, setIsLineNumbers] = useState(true);
+
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
 
-  useEffect(() => {
-    async function fetchPreferences() {
+  async function fetchPreferences() {
+    // 1. check for prefs in local storage
+    const localPrefs = localStorage.getItem("userPreferences");
+    if (localPrefs !== null) {
       try {
-        setLoading(true);
-        const prefsFromDB = await getUser();
-
-        if (prefsFromDB) {
-          setPreferences({
-            theme: prefsFromDB.theme ?? null,
-            font_size: prefsFromDB.font_size ?? 14,
-            tab_size: prefsFromDB.tab_size ?? 4,
-            line_numbers: prefsFromDB.line_numbers ?? true,
-            vim_mode: prefsFromDB.vim_mode ?? false,
-            language: prefsFromDB.language ?? "cpp"
-          });
+        const parsedPrefs = JSON.parse(localPrefs);
+        if (parsedPrefs.language && parsedPrefs.language in languages) {
+          setLangKey(parsedPrefs.language);
         }
-      } catch (error) {
-        console.error("Error fetching preferences:", error);
-        setMessage({ type: "error", text: "Sign in to save preferences ;)" });
-      } finally {
-        setLoading(false);
+        if (parsedPrefs.vim_mode !== null) {
+          setIsVim(parsedPrefs.vim_mode);
+        }
+        if (parsedPrefs.tab_size !== null) {
+          setTabSizeValue(parsedPrefs.tab_size);
+        }
+        if (parsedPrefs.font_size !== null) {
+          setFontSize(parsedPrefs.font_size);
+        }
+        if (parsedPrefs.line_numbers !== null) {
+          setIsLineNumbers(parsedPrefs.line_numbers);
+        }
+        return "ok";
+      } catch (e) {
+        console.error("Failed to parse local userPrefernces: ", e);
       }
     }
 
-    fetchPreferences();
-  }, []);
+    // 2. resort to DB fetch
+    try {
+      const prefsFromDB = await getUser();
+      if (prefsFromDB) {
+        if (prefsFromDB.language && prefsFromDB.language in languages) {
+          setLangKey(prefsFromDB.language as keyof typeof languages);
+        }
+        if (prefsFromDB.vim_mode !== null) {
+          setIsVim(prefsFromDB.vim_mode);
+        }
+        if (prefsFromDB.tab_size !== null) {
+          setTabSizeValue(prefsFromDB.tab_size);
+        }
+        if (prefsFromDB.font_size !== null) {
+          setFontSize(prefsFromDB.font_size);
+        }
+        if (prefsFromDB.line_numbers !== null) {
+          setIsLineNumbers(prefsFromDB.line_numbers);
+        }
+        localStorage.setItem(
+          "userPreferences",
+          JSON.stringify({
+            language: prefsFromDB.language,
+            vim_mode: prefsFromDB.vim_mode,
+            font_size: prefsFromDB.font_size,
+            tab_size: prefsFromDB.tab_size,
+            line_numbers: prefsFromDB.line_numbers
+          })
+        );
+      }
+      return "ok";
+    } catch (e) {
+      console.error("Failed to get preferences from database: ", e);
+    }
+  }
+
+  const { isLoading, error: queryError } = useQuery({
+    queryKey: ["fetchPreferences"],
+    queryFn: fetchPreferences,
+    refetchOnMount: "always"
+  });
+  if (queryError) {
+    setMessage({ type: "error", text: queryError.message });
+  }
 
   async function handleSubmit(formData: FormData) {
     try {
@@ -86,7 +128,7 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <main className="min-h-screen w-full px-4 py-4 md:px-6 lg:px-8">
         <div className="relative mx-auto mb-6 flex w-full max-w-md items-center justify-center">
@@ -215,11 +257,9 @@ export default function SettingsPage() {
             id="language"
             name="language"
             className="w-56 cursor-pointer rounded-md border px-3 py-2 text-center text-sm"
-            value={preferences.language ?? "cpp"}
+            value={langKey ?? "cpp"}
             style={{ borderColor: "var(--primary)" }}
-            onChange={(e) =>
-              setPreferences({ ...preferences, language: e.target.value })
-            }
+            onChange={(e) => setLangKey(e.target.value)}
           >
             {Object.entries(languages).map(([key, lang]) => (
               <option key={key} value={key}>
@@ -239,11 +279,9 @@ export default function SettingsPage() {
             name="vim_mode"
             type="checkbox"
             className="h-4 w-4 rounded border-gray-300"
-            checked={preferences.vim_mode ?? false}
+            checked={isVim ?? false}
             style={{ borderColor: "var(--primary)" }}
-            onChange={(e) =>
-              setPreferences({ ...preferences, vim_mode: e.target.checked })
-            }
+            onChange={(e) => setIsVim(e.target.checked)}
           />
         </div>
 
@@ -263,14 +301,9 @@ export default function SettingsPage() {
             max="32"
             step="1"
             className="w-32 rounded-md border px-3 py-2 text-center text-sm"
-            value={preferences.font_size ?? 14}
+            value={fontSize ?? 14}
             style={{ borderColor: "var(--primary)" }}
-            onChange={(e) =>
-              setPreferences({
-                ...preferences,
-                font_size: Number(e.target.value)
-              })
-            }
+            onChange={(e) => setFontSize(Number(e.target.value))}
           />
         </div>
 
@@ -290,14 +323,9 @@ export default function SettingsPage() {
             max="8"
             step="1"
             className="w-32 rounded-md border px-3 py-2 text-center text-sm"
-            value={preferences.tab_size ?? 4}
+            value={tabSizeValue ?? 4}
             style={{ borderColor: "var(--primary)" }}
-            onChange={(e) =>
-              setPreferences({
-                ...preferences,
-                tab_size: Number(e.target.value)
-              })
-            }
+            onChange={(e) => setTabSizeValue(Number(e.target.value))}
           />
         </div>
 
@@ -314,11 +342,9 @@ export default function SettingsPage() {
             name="line_numbers"
             type="checkbox"
             className="h-4 w-4 rounded border-gray-300"
-            checked={preferences.line_numbers ?? true}
+            checked={isLineNumbers ?? true}
             style={{ borderColor: "var(--primary)" }}
-            onChange={(e) =>
-              setPreferences({ ...preferences, line_numbers: e.target.checked })
-            }
+            onChange={(e) => setIsLineNumbers(e.target.checked)}
           />
         </div>
         <Button

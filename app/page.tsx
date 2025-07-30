@@ -1,101 +1,43 @@
 "use client";
 
 import CodeEditor from "../components/CodeEditor";
-import { PlayIcon } from "@radix-ui/react-icons";
-import { Button } from "@/components/ui/button";
+// import { PlayIcon } from "@radix-ui/react-icons";
+// import { Button } from "@/components/ui/button";
 import Wordle from "@/components/Wordle";
-import { useState, useEffect } from "react";
-import { languages } from "@/types/editor-languages";
-import { submitCode, pollExecutionResult } from "@/lib/judge0";
+import { useState } from "react";
+// import { languages } from "@/types/editor-languages";
+// import { submitCode, pollExecutionResult } from "@/lib/judge0";
 import type { Judge0ExecutionResponse } from "@/types/judge0";
 import ReactMarkdown from "react-markdown";
 import ExampleBox from "../components/ExampleBox";
 import { getTodaysProblem } from "./actions/get-problem";
-import type { Problem } from "@/types/problem-generation";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Home() {
-  const [currentCode, setCurrentCode] = useState("");
-  const [currentLanguage, setCurrentLanguage] = useState("cpp");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // const [currentCode, setCurrentCode] = useState("");
+  // const [currentLanguage, setCurrentLanguage] = useState("cpp");
+  // const [isSubmitting, setIsSubmitting] = useState(false);
   const [executionResult, setExecutionResult] =
     useState<Judge0ExecutionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [problem, setProblem] = useState<Problem | null>(null);
-  const [problemError, setProblemError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const result = await getTodaysProblem();
-        if ("code" in result) {
-          setProblemError(result.message);
-        } else {
-          setProblem(result);
-        }
-      } catch {
-        setProblemError("Failed to load today's problem.");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  function handleCodeChange(code: string) {
-    setCurrentCode(code);
-  }
-
-  function handleLanguageChange(language: string) {
-    setCurrentLanguage(language);
-  }
-
-  async function handleSubmit() {
-    if (!currentCode.trim()) {
-      setError("Please enter some code to submit");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-    setExecutionResult(null);
-
-    try {
-      const languageId =
-        languages[currentLanguage as keyof typeof languages].language_id;
-      const token = await submitCode(currentCode, languageId);
-
-      if (typeof token === "string") {
-        setError(token);
-        return;
-      }
-
-      //TODO: stop using polling for code submission
-      // Poll for results
-      const result = await pollExecutionResult(token);
-
-      if (typeof result === "string" && result.startsWith("Error")) {
-        setError(result);
-        return;
-      }
-
-      setExecutionResult(result as Judge0ExecutionResponse);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  const {
+    data: problem,
+    isLoading,
+    error: queryError
+  } = useQuery({
+    queryKey: ["getTodaysProblem"],
+    queryFn: getTodaysProblem
+  });
 
   return (
     <>
       {/* Problem Title and Description */}
       <div className="mt-6 mb-8 ml-6 text-center">
-        {loading ? (
+        {isLoading ? (
           <div>Loading...</div>
-        ) : problemError ? (
-          <div className="text-red-500">{problemError}</div>
+        ) : queryError ? (
+          <div className="text-red-500">{queryError.message}</div>
         ) : problem ? (
           <>
             <h1 className="text-2xl font-bold">{problem.title}</h1>
@@ -109,23 +51,8 @@ export default function Home() {
       </div>
 
       <main className="flex flex-col md:flex-row">
-        {/* Code Editor */}
         <div className="w-0.9 mx-6 md:w-2/3">
-          <CodeEditor
-            onCodeChange={handleCodeChange}
-            onLanguageChange={handleLanguageChange}
-          />
-          <div className="flex justify-start pt-2">
-            <Button
-              type="button"
-              className="flex cursor-pointer items-center gap-2"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            >
-              <PlayIcon className="h-5 w-5" />
-              {isSubmitting ? "Running..." : "Submit"}
-            </Button>
-          </div>
+          <CodeEditor />
         </div>
 
         <div className="mr-4 flex flex-col items-center">

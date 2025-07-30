@@ -11,7 +11,7 @@ interface Language {
   version: string;
   extension: () => LanguageSupport;
   boilerplate: string;
-  language_id: number; // Judge0 language ID
+  language_id: number;
 }
 
 export const languages: Record<string, Language> = {

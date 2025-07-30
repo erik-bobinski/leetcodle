@@ -2,9 +2,8 @@
 
 import { supabase } from "@/lib/supabase";
 import type { Problem } from "@/types/problem-generation";
-import { PostgrestError } from "@supabase/supabase-js";
 
-export async function getTodaysProblem(): Promise<PostgrestError | Problem> {
+export async function getTodaysProblem() {
   const now = new Date();
   const today = now.toISOString().split("T")[0];
   const { data, error } = await supabase
@@ -14,7 +13,7 @@ export async function getTodaysProblem(): Promise<PostgrestError | Problem> {
     .single();
   if (error) {
     console.error(`Database Error: ${error}`);
-    return error;
+    throw new Error(error.message);
   }
   return data as Problem;
 }
