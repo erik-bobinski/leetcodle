@@ -18,7 +18,6 @@ import {
 import {
   indentOnInput,
   bracketMatching,
-  foldGutter,
   foldKeymap
 } from "@codemirror/language";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
@@ -158,7 +157,6 @@ export default function CodeEditor() {
     refetchOnMount: "always"
   });
 
-  // Update boilerplate when tab size changes
   useEffect(() => {
     setCode(processBoilerplate(languages[langKey].boilerplate, tabSizeValue));
   }, [langKey, tabSizeValue]);
@@ -168,7 +166,6 @@ export default function CodeEditor() {
       languages[langKey].extension(),
       ...(isVim ? [vim()] : []),
       lineNumbers(),
-      foldGutter(),
       highlightSpecialChars(),
       history(),
       drawSelection(),
