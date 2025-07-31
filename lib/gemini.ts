@@ -30,16 +30,26 @@ export async function generateProblemDetails(): Promise<ProblemDetails> {
     model: "gemini-2.5-flash",
     contents: `You are creating a daily coding problem in the style of leetcode
     with easy to medium difficulty. Generate the problem's title, description, an example input, 
-    and its corresponding example output. For all code terms, use inline markdown code formatting 
-    (wrap the term in backticks, etc). 
+    its corresponding example output, and starter code for C++ 17, Go 1.21, Java 13.01, NodeJS 18.15, 
+    TypeScript 5.0, Python 3.11, and Rust 1.70, including any library imports necessary. For all code 
+    terms, use inline markdown code formatting (wrap the term in backticks, etc). 
 
     IMPORTANT: Return ONLY valid JSON without any markdown formatting, code blocks, or extra text.
     Return your response in this exact JSON format:
     {
       "title": "Title goes here",
       "description": "Description goes here", 
-      "exampleInput": "Example input goes here",
-      "exampleOutput": "Example output goes here"
+      "example_input": "Example input goes here",
+      "example_output": "Example output goes here",
+      "starter_code": {
+        "cpp": "starter code here...",
+        "go": "...",
+        "java": "...",
+        "js": "...",
+        "ts": "...",
+        "python": "...",
+        "rust": "..."
+      }
     }`,
     config: {
       temperature: 1.5

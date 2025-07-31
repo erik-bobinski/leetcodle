@@ -55,14 +55,6 @@ export async function POST(req: Request) {
   if (eventType === "user.created") {
     const { id, email_addresses, username } = payload.data;
 
-    console.log(`👤 User created event received for user ID: ${id}`);
-    console.log(`📧 Email: ${email_addresses?.[0]?.email_address}`);
-    console.log(`👤 Username: ${username}`);
-    console.log(
-      "Clerk webhook payload:",
-      JSON.stringify(payload.data, null, 2)
-    );
-
     const { error } = await supabase.from("users").insert({
       user_id: id,
       email: email_addresses[0]?.email_address,
@@ -80,7 +72,6 @@ export async function POST(req: Request) {
       return new Response("Failed to insert user", { status: 500 });
     }
 
-    console.log(`User created in Supabase with user_id: ${id}`);
     return new Response("User created", { status: 200 });
   } else if (eventType === "user.updated") {
     const {
@@ -114,7 +105,6 @@ export async function POST(req: Request) {
       return new Response("Failed to update user", { status: 500 });
     }
 
-    console.log(`User updated in Supabase: ${id}`);
     return new Response("User updated", { status: 200 });
   } else if (eventType === "user.deleted") {
     const { id } = payload.data;
@@ -123,10 +113,9 @@ export async function POST(req: Request) {
       console.error("Error deleting user from Supabase: ", error);
       return new Response("Error deleting user from Supabase", { status: 500 });
     }
-    console.log("User deleted from Supabase: ", id);
     return new Response("User deleted", { status: 200 });
   }
 
-  console.log(`⚠️ Unhandled event type: ${eventType}`);
+  console.error(`⚠️ Unhandled event type: ${eventType}`);
   return new Response("Unhandled event type", { status: 500 });
 }

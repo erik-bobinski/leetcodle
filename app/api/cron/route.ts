@@ -117,10 +117,11 @@ export async function GET(request: NextRequest) {
     id: crypto.randomUUID(),
     title: problemDetails.title,
     description: problemDetails.description,
-    example_input: problemDetails.exampleInput,
-    example_output: problemDetails.exampleOutput,
+    example_input: problemDetails.example_input,
+    example_output: problemDetails.example_output,
     test_cases: testCases,
     reference_solution: referenceSolution,
+    starter_code: problemDetails.starter_code,
     active_date: activeDateString
   });
 

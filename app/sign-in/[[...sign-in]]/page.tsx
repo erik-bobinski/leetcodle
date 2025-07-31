@@ -32,8 +32,7 @@ export default function SignInPage() {
       if (!response.ok) {
         const errorData = await response.json();
         setError(
-          errorData.error ||
-            "User not found. Please check your credentials or sign up for a new account."
+          errorData.error || "User not found, check your credentials or sign up"
         );
         setIsLoading(false);
         return;

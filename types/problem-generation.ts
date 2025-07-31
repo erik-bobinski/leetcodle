@@ -3,6 +3,9 @@ export interface ProblemDetails {
   description: string;
   example_input: string;
   example_output: string;
+  starter_code: {
+    [lang: string]: string;
+  };
 }
 
 export interface ReferenceSolution {
