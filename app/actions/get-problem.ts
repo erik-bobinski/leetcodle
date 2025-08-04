@@ -1,7 +1,6 @@
 "use server";
 
 import { supabase } from "@/lib/supabase";
-import type { Problem } from "@/types/problem-generation";
 
 export async function getTodaysProblem() {
   const now = new Date();
@@ -13,7 +12,26 @@ export async function getTodaysProblem() {
     .single();
   if (error) {
     console.error(`Database Error: ${error}`);
-    throw new Error(error.message);
+    // throw new Error(error.message);
   }
-  return data as Problem;
+
+  // Filter out testArgs from template to prevent exposing test cases
+  if (data && data.template) {
+    try {
+      // Check if template is already an object (Supabase might auto-parse JSON columns)
+      const templateData =
+        typeof data.template === "string"
+          ? JSON.parse(data.template)
+          : data.template;
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { testArgs, ...safeTemplateData } = templateData;
+      data.template = JSON.stringify(safeTemplateData);
+    } catch (error) {
+      console.error("Failed to parse template JSON:", error);
+      // If template is invalid JSON, keep it as is
+    }
+  }
+
+  return data;
 }

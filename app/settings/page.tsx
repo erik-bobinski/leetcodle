@@ -1,5 +1,3 @@
-// TODO: make the problem field SSR
-
 "use client";
 
 import { getUser } from "../actions/get-preferences";
@@ -9,7 +7,7 @@ import { updatePreferences } from "../actions/update-preferences";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { languages } from "@/types/editor-languages";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 export default function SettingsPage() {
   const [langKey, setLangKey] = useState<keyof typeof languages>("cpp");
@@ -17,12 +15,13 @@ export default function SettingsPage() {
   const [tabSizeValue, setTabSizeValue] = useState(2);
   const [fontSize, setFontSize] = useState<number | null>(null);
   const [isLineNumbers, setIsLineNumbers] = useState(true);
-
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function fetchPreferences() {
     // 1. check for prefs in local storage
@@ -87,14 +86,29 @@ export default function SettingsPage() {
     }
   }
 
-  const { isLoading, error: queryError } = useQuery({
-    queryKey: ["fetchPreferences"],
-    queryFn: fetchPreferences,
-    refetchOnMount: "always"
-  });
-  if (queryError) {
-    setMessage({ type: "error", text: queryError.message });
-  }
+  useEffect(() => {
+    if (error) {
+      setMessage({ type: "error", text: error });
+    }
+  }, [error]);
+
+  useEffect(() => {
+    async function loadPreferences() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        await fetchPreferences();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load preferences"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadPreferences();
+  }, []);
 
   async function handleSubmit(formData: FormData) {
     try {

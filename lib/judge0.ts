@@ -48,13 +48,15 @@ export async function submitCode(
 }
 
 export async function generateTestCasesOutputs(
-  solutionsWithTestCases: Record<string, string>
-): Promise<Record<string, Judge0ExecutionResponse | string>> {
-  const results: Record<string, Judge0ExecutionResponse | string> = {};
+  solutionsWithTestCases: Record<string, { input: string; code: string }>
+): Promise<Record<string, { input: string; code: string }>> {
+  const results: Record<string, { input: string; code: string }> = {};
 
   // Run solutions sequentially to avoid rate limiting
-  for (const [key, sourceCode] of Object.entries(solutionsWithTestCases)) {
-    console.log(`Executing test case: ${key}`);
+  for (const [testCaseKey, testCaseData] of Object.entries(
+    solutionsWithTestCases
+  )) {
+    console.log(`Executing test case: ${testCaseKey}`);
 
     // Add delay between requests to respect rate limits
     if (Object.keys(results).length > 0) {
@@ -62,15 +64,26 @@ export async function generateTestCasesOutputs(
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    const result = await submitCode(sourceCode, 71); // use python
-    results[key] = result;
+    // Extract the source code from the new structure
+    const sourceCode = testCaseData.code;
 
-    // If we got an error, log it but continue with other test cases
+    const result = await submitCode(sourceCode, 71); // use python
+
+    // Extract the stdout from the result
+    let output = "";
     if (typeof result === "string") {
-      console.error(`Test case ${key} failed: ${result}`);
+      output = `Error running test case: ${result}`;
+      console.error(`Test case ${testCaseKey} failed: ${result}`);
     } else {
-      console.log(`Test case ${key} completed successfully`);
+      output = result.stdout || ""; // Get the stdout from successful execution
+      console.log(`Test case ${testCaseKey} completed successfully`);
     }
+
+    // Preserve the original structure but replace code with output
+    results[testCaseKey] = {
+      input: testCaseData.input,
+      code: output
+    };
   }
 
   return results;

@@ -13,7 +13,8 @@ export default function ProblemDetails() {
     error: queryError
   } = useQuery({
     queryKey: ["getTodaysProblem"],
-    queryFn: getTodaysProblem
+    queryFn: getTodaysProblem,
+    refetchOnMount: true
   });
 
   return (

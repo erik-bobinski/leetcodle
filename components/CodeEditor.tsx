@@ -32,9 +32,8 @@ import { lintKeymap } from "@codemirror/lint";
 import { indentWithTab } from "@codemirror/commands";
 import { indentUnit } from "@codemirror/language";
 import { languages } from "@/types/editor-languages";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { vim } from "@replit/codemirror-vim";
-// import { LanguageSupport } from "@codemirror/language";
 import { getUser } from "../app/actions/get-preferences";
 import CodeMirror from "@uiw/react-codemirror";
 import { useQuery } from "@tanstack/react-query";
@@ -70,16 +69,90 @@ const leetcodleTheme = createTheme({
   ]
 });
 
-export default function CodeEditor() {
-  function processBoilerplate(boilerplate: string, tabSize: number = 2) {
-    return boilerplate.replace(/\{\{indent\}\}/g, " ".repeat(tabSize));
-  }
+interface TemplateData {
+  args: string[];
+  returnType: Record<string, string>;
+  functionName: string;
+  jsDocString?: Record<string, string>;
+}
 
+export default function CodeEditor({ template }: { template?: string }) {
   const [langKey, setLangKey] = useState<keyof typeof languages>("cpp");
+
+  const processBoilerplate = useCallback(
+    (boilerplate: string, tabSize: number = 4, templateData?: TemplateData) => {
+      let processed = boilerplate.replace(
+        /\{\{indent\}\}/g,
+        " ".repeat(tabSize)
+      );
+
+      if (templateData) {
+        // Replace template variables with actual values
+        processed = processed.replace(
+          /\{\{functionName\}\}/g,
+          templateData.functionName
+        );
+
+        // Handle args - join them with commas
+        const argsString = templateData.args.join(", ");
+        processed = processed.replace(/\{\{args\}\}/g, argsString);
+
+        // Handle return type based on current language
+        const returnType = templateData.returnType[langKey] || "void";
+        processed = processed.replace(/\{\{returns\}\}/g, returnType);
+
+        // Handle JavaScript JSDoc generation
+        if (langKey === "javascript" && templateData.jsDocString) {
+          // Generate JSDoc comments
+          const jsDocLines: string[] = [];
+
+          // Add @param lines for each parameter
+          Object.entries(templateData.jsDocString).forEach(([key, type]) => {
+            if (key !== "returns") {
+              jsDocLines.push(` * @param {${type}} ${key}`);
+            }
+          });
+
+          // Add @returns line
+          if (templateData.jsDocString.returns) {
+            jsDocLines.push(
+              ` * @returns {${templateData.jsDocString.returns}}`
+            );
+          }
+
+          // Insert JSDoc block at the top of the file
+          const jsDocBlock = `/**\n${jsDocLines.join("\n")}\n */\n`;
+          processed = jsDocBlock + processed;
+        }
+      }
+
+      return processed;
+    },
+    [langKey]
+  );
   const [isVim, setIsVim] = useState(false);
   const [tabSizeValue, setTabSizeValue] = useState(2);
+  // Parse template JSON if provided
+  const templateData: TemplateData | undefined = template
+    ? (() => {
+        try {
+          // Check if template is already an object
+          const parsed =
+            typeof template === "string" ? JSON.parse(template) : template;
+          return parsed;
+        } catch (error) {
+          console.error("Failed to parse template JSON:", error);
+          return undefined;
+        }
+      })()
+    : undefined;
+
   const [code, setCode] = useState(
-    processBoilerplate(languages[langKey].boilerplate, tabSizeValue)
+    processBoilerplate(
+      languages[langKey].boilerplate,
+      tabSizeValue,
+      templateData
+    )
   );
   const [tabSize, setTabSize] = useState(indentUnit.of("  "));
   const [fontSize, setFontSize] = useState<number | null>(null);
@@ -108,7 +181,9 @@ export default function CodeEditor() {
         if (parsedPrefs.line_numbers !== null) {
           setIsLineNumbers(parsedPrefs.line_numbers);
         }
-        return "ok";
+        return {
+          ...parsedPrefs
+        };
       } catch (e) {
         console.error("Failed to parse local userPrefernces: ", e);
       }
@@ -144,8 +219,10 @@ export default function CodeEditor() {
             line_numbers: prefsFromDB.line_numbers
           })
         );
+        return {
+          ...prefsFromDB
+        };
       }
-      return "ok";
     } catch (e) {
       console.error("Failed to get preferences from database: ", e);
     }
@@ -154,12 +231,34 @@ export default function CodeEditor() {
   const { isLoading, error } = useQuery({
     queryKey: ["fetchPreferences"],
     queryFn: fetchPreferences,
-    refetchOnMount: "always"
+    refetchOnMount: "always",
+    staleTime: Infinity
   });
 
   useEffect(() => {
-    setCode(processBoilerplate(languages[langKey].boilerplate, tabSizeValue));
-  }, [langKey, tabSizeValue]);
+    // Re-parse template data when template changes
+    const currentTemplateData: TemplateData | undefined = template
+      ? (() => {
+          try {
+            // Check if template is already an object
+            return typeof template === "string"
+              ? JSON.parse(template)
+              : template;
+          } catch (error) {
+            console.error("Failed to parse template JSON:", error);
+            return undefined;
+          }
+        })()
+      : undefined;
+
+    setCode(
+      processBoilerplate(
+        languages[langKey].boilerplate,
+        tabSizeValue,
+        currentTemplateData
+      )
+    );
+  }, [langKey, tabSizeValue, template, processBoilerplate]);
 
   const extensions = useMemo(() => {
     return [

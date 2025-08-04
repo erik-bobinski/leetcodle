@@ -48,7 +48,8 @@
     "react-scan": "^0.4.3",
     "svix": "^1.67.0",
     "tailwind-merge": "^3.3.1",
-    "thememirror": "^2.0.1"
+    "thememirror": "^2.0.1",
+    "zod": "^4.0.14"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

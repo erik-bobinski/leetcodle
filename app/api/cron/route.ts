@@ -4,7 +4,7 @@ import {
   generateProblemDetails,
   generateReferenceSolution,
   generateTestCasesSolutions
-} from "@/lib/gemini";
+} from "@/lib/ai-tooling";
 import { generateTestCasesOutputs } from "@/lib/judge0";
 
 export async function GET(request: NextRequest) {
@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
 
   // 3. reference solution AI call
   const referenceSolution = await generateReferenceSolution(
-    problemDetails.description
+    problemDetails.description,
+    problemDetails.template.functionName,
+    problemDetails.template.args
   );
 
   // 4. test cases AI call
@@ -31,13 +33,14 @@ export async function GET(request: NextRequest) {
   );
 
   // 5. generate expected outputs via judge0
-  const testCasesOutputs = await generateTestCasesOutputs(testCasesSolutions);
+  const testCasesFinal = await generateTestCasesOutputs(testCasesSolutions);
 
   // Check for failed test cases but don't fail the entire process
   const failedTestCases: string[] = [];
-  Object.entries(testCasesOutputs).forEach(([testCase, value]) => {
-    if (typeof value === "string") {
-      console.error(`Test case "${testCase}" failed: ${value}`);
+  Object.entries(testCasesFinal).forEach(([testCase, testCaseData]) => {
+    const output = testCaseData.code;
+    if (output.startsWith("Error")) {
+      console.error(`Test case "${testCase}" failed: ${output}`);
       failedTestCases.push(testCase);
     }
   });
@@ -51,48 +54,28 @@ export async function GET(request: NextRequest) {
 
   // 6. create test cases JSON mapping inputs to outputs
   const testCases: Record<string, string> = {};
-  Object.entries(testCasesOutputs).forEach(
-    ([testCaseInput, executionResult]) => {
-      // Debug logging to see the actual response structure
-      console.log(`🔍 Processing test case "${testCaseInput}":`, {
-        type: typeof executionResult,
-        hasStdout:
-          executionResult &&
-          typeof executionResult === "object" &&
-          "stdout" in executionResult,
-        stdout:
-          executionResult && typeof executionResult === "object"
-            ? executionResult.stdout
-            : "N/A",
-        fullResponse: executionResult
-      });
-      if (
-        // success output
-        typeof executionResult === "object" &&
-        executionResult.stdout !== null &&
-        executionResult.stdout !== undefined
-      ) {
-        testCases[testCaseInput] = executionResult.stdout.trim();
-        console.log(`✅ Test case "${testCaseInput}" processed successfully`);
-      } else if (typeof executionResult === "string") {
-        // error output - skip this test case but don't fail the entire process
-        console.error(
-          `❌ Test case "${testCaseInput}" failed: ${executionResult}`
-        );
-        // Don't throw error, just skip this test case
-      } else if (
-        // null or undefined output
-        typeof executionResult === "object" &&
-        (executionResult.stdout === null ||
-          executionResult.stdout === undefined)
-      ) {
-        console.error(
-          `❌ Test case "${testCaseInput}" produced no output (stdout is null/undefined)`
-        );
-        // Don't throw error, just skip this test case
+  Object.entries(testCasesFinal).forEach(([testCaseKey, testCaseData]) => {
+    const input = testCaseData.input;
+    const output = testCaseData.code;
+
+    // Debug logging to see the actual response structure
+    console.log(
+      `🔍 Processing test case "${testCaseKey}" with input "${input}":`,
+      {
+        output: output,
+        startsWithError: output.startsWith("Error")
       }
+    );
+
+    if (!output.startsWith("Error")) {
+      testCases[input] = output.trim();
+      console.log(`✅ Test case "${testCaseKey}" processed successfully`);
+    } else {
+      // error output - skip this test case but don't fail the entire process
+      console.error(`❌ Test case "${testCaseKey}" failed: ${output}`);
+      // Don't throw error, just skip this test case
     }
-  );
+  });
 
   // Ensure we have at least some test cases
   if (Object.keys(testCases).length === 0) {
@@ -121,7 +104,7 @@ export async function GET(request: NextRequest) {
     example_output: problemDetails.example_output,
     test_cases: testCases,
     reference_solution: referenceSolution,
-    starter_code: problemDetails.starter_code,
+    template: problemDetails.template,
     active_date: activeDateString
   });
 
