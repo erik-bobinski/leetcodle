@@ -238,6 +238,15 @@ export default function CodeEditor({ template }: { template?: string }) {
     } catch (e) {
       console.error("Failed to get preferences from database: ", e);
     }
+
+    // 3. Last resort, use default preferences
+    return {
+      language: "cpp",
+      vim_mode: false,
+      font_size: null,
+      tab_size: 2,
+      line_numbers: true
+    };
   }
 
   const { isLoading, error } = useQuery({
