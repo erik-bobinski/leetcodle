@@ -7,7 +7,7 @@ import { updatePreferences } from "../actions/update-preferences";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { languages } from "@/types/editor-languages";
-import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function SettingsPage() {
   const [langKey, setLangKey] = useState<keyof typeof languages>("cpp");
@@ -20,8 +20,6 @@ export default function SettingsPage() {
     type: "success" | "error";
     text: string;
   } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   async function fetchPreferences() {
     // 1. check for prefs in local storage
@@ -44,7 +42,9 @@ export default function SettingsPage() {
         if (parsedPrefs.line_numbers !== null) {
           setIsLineNumbers(parsedPrefs.line_numbers);
         }
-        return "ok";
+        return {
+          ...parsedPrefs
+        };
       } catch (e) {
         console.error("Failed to parse local userPrefernces: ", e);
       }
@@ -80,35 +80,26 @@ export default function SettingsPage() {
           })
         );
       }
-      return "ok";
+      return {
+        ...prefsFromDB
+      };
     } catch (e) {
       console.error("Failed to get preferences from database: ", e);
     }
   }
 
-  useEffect(() => {
-    if (error) {
-      setMessage({ type: "error", text: error });
+  const { isLoading, error } = useQuery({
+    queryKey: ["fetchPreferences"],
+    queryFn: fetchPreferences,
+    refetchOnMount: "always",
+    staleTime: Infinity
+  });
+  if (error) {
+    if (error instanceof Error) {
+      setMessage({ type: "error", text: `${error.message}` });
     }
-  }, [error]);
-
-  useEffect(() => {
-    async function loadPreferences() {
-      try {
-        setIsLoading(true);
-        setError(null);
-        await fetchPreferences();
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load preferences"
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadPreferences();
-  }, []);
+    setMessage({ type: "error", text: `${error}` });
+  }
 
   async function handleSubmit(formData: FormData) {
     try {
