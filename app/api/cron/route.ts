@@ -23,13 +23,14 @@ export async function GET(request: NextRequest) {
   const referenceSolution = await generateReferenceSolution(
     problemDetails.description,
     problemDetails.template.functionName,
-    problemDetails.template.args
+    problemDetails.template.argNames
   );
 
   // 4. test cases AI call
   const testCasesSolutions = await generateTestCasesSolutions(
     problemDetails.description,
-    referenceSolution.python
+    referenceSolution.python,
+    problemDetails.template.testArgs.python
   );
 
   // 5. generate expected outputs via judge0

@@ -70,10 +70,10 @@ const leetcodleTheme = createTheme({
 });
 
 interface TemplateData {
-  args: string[];
+  typedArgs: Record<string, string[]>;
   returnType: Record<string, string>;
   functionName: string;
-  jsDocString?: Record<string, string>;
+  jsDocString?: string | Record<string, string>;
 }
 
 export default function CodeEditor({ template }: { template?: string }) {
@@ -93,8 +93,9 @@ export default function CodeEditor({ template }: { template?: string }) {
           templateData.functionName
         );
 
-        // Handle args - join them with commas
-        const argsString = templateData.args.join(", ");
+        // Handle args - join them with commas for the current language
+        const currentLangArgs = templateData.typedArgs[langKey] || [];
+        const argsString = currentLangArgs.join(", ");
         processed = processed.replace(/\{\{args\}\}/g, argsString);
 
         // Handle return type based on current language
@@ -106,18 +107,28 @@ export default function CodeEditor({ template }: { template?: string }) {
           // Generate JSDoc comments
           const jsDocLines: string[] = [];
 
+          // Parse the JSON-formatted jsDocString
+          let jsDocData: Record<string, string>;
+          try {
+            jsDocData =
+              typeof templateData.jsDocString === "string"
+                ? JSON.parse(templateData.jsDocString)
+                : templateData.jsDocString;
+          } catch (error) {
+            console.error("Failed to parse jsDocString JSON:", error);
+            return processed;
+          }
+
           // Add @param lines for each parameter
-          Object.entries(templateData.jsDocString).forEach(([key, type]) => {
+          Object.entries(jsDocData).forEach(([key, type]) => {
             if (key !== "returns") {
               jsDocLines.push(` * @param {${type}} ${key}`);
             }
           });
 
           // Add @returns line
-          if (templateData.jsDocString.returns) {
-            jsDocLines.push(
-              ` * @returns {${templateData.jsDocString.returns}}`
-            );
+          if (jsDocData.returns) {
+            jsDocLines.push(` * @returns {${jsDocData.returns}}`);
           }
 
           // Insert JSDoc block at the top of the file
@@ -132,6 +143,7 @@ export default function CodeEditor({ template }: { template?: string }) {
   );
   const [isVim, setIsVim] = useState(false);
   const [tabSizeValue, setTabSizeValue] = useState(2);
+
   // Parse template JSON if provided
   const templateData: TemplateData | undefined = template
     ? (() => {
