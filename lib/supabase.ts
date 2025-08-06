@@ -1,18 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-// Types for our editor preferences
-export type EditorPreferences = {
-  device_id: string | null;
-  user_id: string | null;
+// editor preferences
+export type User = {
   theme: string | null;
   font_size: number | null;
   tab_size: number | null;
@@ -21,8 +19,9 @@ export type EditorPreferences = {
   language: string | null;
 };
 
-// Type for creating/updating preferences (omits auto-generated fields)
-export type EditorPreferencesInput = Omit<
-  EditorPreferences,
-  "id" | "created_at" | "updated_at"
->;
+export const createServiceRoleClient = () =>
+  createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false
+    }
+  });

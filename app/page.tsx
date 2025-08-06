@@ -1,20 +1,37 @@
-import CodeEditor from "./components/CodeEditor";
+import CodeEditor from "@/components/CodeEditor";
+import Wordle from "@/components/Wordle";
+import { getTodaysProblem } from "./actions/get-problem";
+import { getQueryClient } from "./get-query-client";
+// import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import ProblemDetails from "@/components/ProblemDetails";
+import CodeOutput from "@/components/CodeOutput";
 
-export default function Home() {
+export default async function Home() {
+  const queryClient = getQueryClient();
+  await queryClient.prefetchQuery({
+    queryKey: ["getTodaysProblem"],
+    queryFn: getTodaysProblem
+  });
+
+  // Get the problem data to pass template to CodeEditor
+  const problem = await getTodaysProblem();
+
   return (
-    <main className="min-h-screen w-full px-4 py-8 md:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight">Leetcodle</h1>
-          <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
-            A new programming problem every day
-          </p>
-        </header>
+    <>
+      {/* Problem Title and Description */}
+      <ProblemDetails />
 
-        <section className="space-y-6">
-          <CodeEditor />
-        </section>
-      </div>
-    </main>
+      <main className="flex flex-col md:flex-row">
+        <div className="w-0.9 mx-6 md:w-2/3">
+          <CodeEditor template={problem?.template} />
+        </div>
+
+        <div className="mr-4 flex flex-col items-center">
+          <Wordle />
+          {/* Output Box */}
+          <CodeOutput />
+        </div>
+      </main>
+    </>
   );
 }

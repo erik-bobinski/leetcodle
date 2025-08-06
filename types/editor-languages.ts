@@ -3,87 +3,91 @@ import { rust } from "@codemirror/lang-rust";
 import { python } from "@codemirror/lang-python";
 import { cpp } from "@codemirror/lang-cpp";
 import { go } from "@codemirror/lang-go";
+import { java } from "@codemirror/lang-java";
+import { LanguageSupport } from "@codemirror/language";
 
 interface Language {
   name: string;
-  extension: () => any;
+  version: string;
+  extension: () => LanguageSupport;
   boilerplate: string;
+  language_id: number;
 }
 
 export const languages: Record<string, Language> = {
   cpp: {
     name: "C++",
+    version: "17",
     extension: cpp,
-    boilerplate: `#include <iostream>
-#include <vector>
-
-class Solution {
+    language_id: 54,
+    boilerplate: `class Solution {
 public:
-    // Your code here
-};
-
-int main() {
-    Solution solution;
-    return 0;
-}`
+{{indent}}{{returns}} {{functionName}}({{args}}) {
+{{indent}}{{indent}}// write all code within this function
+{{indent}}{{indent}}
+{{indent}}}
+};`
   },
   go: {
     name: "Go",
+    version: "1.21",
     extension: go,
-    boilerplate: `package main
-
-func solution() {
-    // Your code here
-}
-
-func main() {
-    solution()
+    language_id: 60,
+    boilerplate: `func {{functionName}}({{args}}) {{returns}} {
+{{indent}}// write all code within this function
+{{indent}}
+}`
+  },
+  java: {
+    name: "Java",
+    version: "13.0.1",
+    extension: java,
+    language_id: 62,
+    boilerplate: `class Solution {
+{{indent}}public {{returns}} {{functionName}}({{args}}) {
+{{indent}}{{indent}}
+{{indent}}}
 }`
   },
   javascript: {
     name: "JavaScript",
+    version: "Node.js 18.15",
     extension: javascript,
-    boilerplate: `function solution() {
-  // Your code here
+    language_id: 63,
+    boilerplate: `function {{functionName}}({{args}}) {
+    // write all code within this function
 }`
   },
   typescript: {
     name: "TypeScript",
+    version: "5.0",
     extension: () => javascript({ typescript: true }),
-    boilerplate: `function solution(): void {
-  // Your code here
-}
-
-// TypeScript-specific features
-interface Example {
-  name: string;
-  value: number;
-}
-
-const example: Example = {
-  name: "test",
-  value: 42
-};`
+    language_id: 74,
+    boilerplate: `function {{functionName}}({{args}}): {{returns}} {
+{{indent}}// write all code within this function
+{{indent}}
+}`
   },
   python: {
     name: "Python",
+    version: "3.11",
     extension: python,
-    boilerplate: `def solution():
-    # Your code here
-    pass
-
-if __name__ == "__main__":
-    solution()`
+    language_id: 71,
+    boilerplate: `class Solution:
+{{indent}}def {{functionName}}(self, {{args}}) -> {{returns}}:
+{{indent}}{{indent}}# write all code within this function
+{{indent}}{{indent}}`
   },
   rust: {
     name: "Rust",
+    version: "1.70",
     extension: rust,
-    boilerplate: `fn solution() {
-    // Your code here
-}
-
-fn main() {
-    solution();
+    language_id: 73,
+    boilerplate: `impl Solution {
+{{indent}}pub fn {{functionName}}({{args}}) -> {{returns}} {
+{{indent}}{{indent}}// write all code within this function
+{{indent}}{{indent}}
+{{indent}}}
 }`
   }
 };

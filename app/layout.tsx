@@ -1,6 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata } from "next/types";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
+import Navigation from "@/components/Navigation";
+import Providers from "@/app/Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Leetcodle",
-  description: "Programming problems inspired by Wordle"
+  description: "Daily Coding problem game inspired by Wordle"
 };
 
 export default function RootLayout({
@@ -23,12 +27,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
-    </html>
+    <ClerkProvider
+      appearance={{
+        baseTheme: dark
+      }}
+    >
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <script
+            src="https://unpkg.com/react-scan/dist/auto.global.js"
+            defer
+          />
+        </head>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          suppressHydrationWarning
+        >
+          <Providers>
+            <div className="mx-auto px-4 py-4 md:px-6 lg:px-8">
+              <Navigation />
+            </div>
+            {children}
+          </Providers>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
