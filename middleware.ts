@@ -3,8 +3,14 @@ import { NextResponse } from "next/server";
 
 const isProtectedRoute = createRouteMatcher(["/settings(.*)", "/history(.*)"]);
 const isAuthRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
+const isUserCrudRoute = createRouteMatcher(["/api/webhooks/clerk"]);
 
 export default clerkMiddleware(async (auth, req) => {
+  // Skip middleware for webhook routes
+  if (isUserCrudRoute(req)) {
+    return NextResponse.next();
+  }
+
   // Check if user is authenticated
   const { userId } = await auth();
 
