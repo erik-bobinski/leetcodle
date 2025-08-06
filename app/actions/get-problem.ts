@@ -12,7 +12,6 @@ export async function getTodaysProblem() {
     .single();
   if (error) {
     console.error(`Database Error: ${error}`);
-    // throw new Error(error.message);
   }
 
   // Filter out testArgs from template to prevent exposing test cases
@@ -24,8 +23,8 @@ export async function getTodaysProblem() {
           ? JSON.parse(data.template)
           : data.template;
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { testArgs, ...safeTemplateData } = templateData;
+      const safeTemplateData = { ...templateData };
+      delete safeTemplateData.testArgs;
       data.template = JSON.stringify(safeTemplateData);
     } catch (error) {
       console.error("Failed to parse template JSON:", error);

@@ -1,11 +1,14 @@
+//TODO: Code running output WIP
 "use client";
 
 import { useState } from "react";
 import type { Judge0ExecutionResponse } from "@/types/judge0";
 
 export default function CodeOutput() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [executionResult, setExecutionResult] =
     useState<Judge0ExecutionResponse | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
 
   return (

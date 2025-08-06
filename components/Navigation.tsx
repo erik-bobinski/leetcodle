@@ -37,7 +37,9 @@ export default function Navigation() {
     <header className="">
       <div className="flex h-16 flex-row items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight">Leetcodle</h1>
+          <h1 className="text-4xl font-bold tracking-tight">
+            {"Leetcodle(site is WIP!)"}
+          </h1>
           <p className="mt-2 text-lg text-gray-600 dark:text-gray-400">
             A new programming problem every day
           </p>

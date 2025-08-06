@@ -21,7 +21,14 @@ export async function getUser(): Promise<User | null> {
       .single();
 
     if (error) {
-      console.error("Database error:", error);
+      if (
+        error?.code === "PGRST116" &&
+        error?.details === "The result contains 0 rows"
+      ) {
+        console.error("No user data found in database");
+      } else {
+        console.error("Database error:", error);
+      }
       return null;
     }
 
