@@ -5,17 +5,21 @@ import { isExecutionResponse, isSubmissionResponse } from "@/types/judge0";
 // api keys
 const JUDGE0_HOST = "judge0-ce.p.rapidapi.com";
 const JUDGE0_BASE_URL = `https://${JUDGE0_HOST}`;
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
-if (!RAPIDAPI_KEY) {
-  throw new Error("Rapid API Key was not set in env!");
-}
 
-// auth headers for api
-const headers = {
-  "content-type": "application/json",
-  "X-RapidAPI-Key": RAPIDAPI_KEY,
-  "X-RapidAPI-Host": JUDGE0_HOST
-};
+// Helper function to get headers with API key
+function getHeaders() {
+  const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+  if (!RAPIDAPI_KEY) {
+    throw new Error("Rapid API Key was not set in env!");
+  }
+
+  // judge0 api auth headers
+  return {
+    "content-type": "application/json",
+    "X-RapidAPI-Key": RAPIDAPI_KEY,
+    "X-RapidAPI-Host": JUDGE0_HOST
+  };
+}
 
 // constants for rate limiting
 const MAX_POLL_RETRIES = 20;
@@ -24,6 +28,7 @@ const POLL_INTERVAL = 500; // ms
 // submit program for RCE to Judge0
 export async function POST(request: NextRequest) {
   try {
+    const headers = getHeaders();
     const { source_code, language_id } = await request.json();
     const wait = request.nextUrl.searchParams.get("wait") === "true";
 
@@ -95,6 +100,7 @@ export async function POST(request: NextRequest) {
 // use token from code submission to try accessing RCE results
 export async function GET(request: NextRequest) {
   try {
+    const headers = getHeaders();
     const token = request.nextUrl.searchParams.get("token");
     if (!token) {
       return NextResponse.json(
@@ -153,6 +159,7 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
+    const headers = getHeaders();
     const { token } = await request.json();
     if (!token) {
       return NextResponse.json(
