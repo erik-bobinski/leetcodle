@@ -1,15 +1,15 @@
 "use server";
 
 import { supabase } from "@/lib/supabase";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 
 export async function updatePreferences(formData: FormData) {
   try {
-    const user = await currentUser();
-    if (!user) {
-      throw new Error("No current user");
+    const { userId } = await auth();
+
+    if (!userId) {
+      throw new Error("No current user - please sign in to save preferences");
     }
-    const userId = user.id;
 
     const rawFormData = Object.fromEntries(formData);
 
