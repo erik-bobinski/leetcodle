@@ -1,0 +1,9 @@
+digraph G {
+    rankdir=TB;
+    node [shape=record];
+    main [label="main | { Commit A | Commit B }"];
+    dev [label="dev | { Commit C | Commit D }"];
+
+    main -> dev [label="Merge from main to dev"];
+    dev -> main [label="Two commits ahead"];
+}
