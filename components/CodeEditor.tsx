@@ -39,6 +39,13 @@ import CodeMirror from "@uiw/react-codemirror";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { PlayIcon } from "@radix-ui/react-icons";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDownIcon } from "@radix-ui/react-icons";
 
 const leetcodleTheme = createTheme({
   variant: "dark",
@@ -443,30 +450,36 @@ export default function CodeEditor({ template }: { template?: string }) {
     <div>
       <div className="w-full">
         <div className="mb-2 flex gap-2">
-          <select
-            value={langKey}
-            onChange={(e) => {
-              const newLang = e.target.value as keyof typeof languages;
-              setLangKey(newLang);
-            }}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="cursor-pointer rounded border border-[#2d3a4e] bg-[#1b222c] p-1 text-[#a6accd] transition-colors hover:border-[#4b526d] hover:bg-[#222b3c]"
+              >
+                {languages[langKey]?.name} ({languages[langKey]?.version})
+                <ChevronDownIcon className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {Object.entries(languages).map(([key, lang]) => (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => setLangKey(key as keyof typeof languages)}
+                  className="cursor-pointer"
+                >
+                  {lang.name} ({lang.version})
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant="outline"
+            onClick={() => setIsVim(!isVim)}
+            data-slot="dropdown-menu-trigger"
             className="cursor-pointer rounded border border-[#2d3a4e] bg-[#1b222c] p-1 text-[#a6accd] transition-colors hover:border-[#4b526d] hover:bg-[#222b3c]"
           >
-            {Object.entries(languages).map(([key, lang]) => (
-              <option key={key} value={key}>
-                {lang.name} ({lang.version})
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => setIsVim(!isVim)}
-            className={`cursor-pointer rounded border px-2 py-1 transition-colors ${
-              isVim
-                ? "border-[#4b526d] bg-[#2d3a4e] text-[#a6accd] hover:border-[#5c6370] hover:bg-[#364458]"
-                : "border-[#2d3a4e] bg-[#1b222c] text-[#a6accd] hover:border-[#4b526d] hover:bg-[#222b3c]"
-            }`}
-          >
             {isVim ? "Vim: On" : "Vim: Off"}
-          </button>
+          </Button>
         </div>
         <CodeMirror
           extensions={extensions}

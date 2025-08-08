@@ -8,6 +8,13 @@ import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { languages } from "@/types/editor-languages";
 import { useQuery } from "@tanstack/react-query";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDownIcon } from "@radix-ui/react-icons";
 
 export default function SettingsPage() {
   const [langKey, setLangKey] = useState<keyof typeof languages>("cpp");
@@ -260,20 +267,35 @@ export default function SettingsPage() {
           >
             Preferred Language
           </label>
-          <select
-            id="language"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-56 justify-between"
+                type="button"
+              >
+                {languages[langKey ?? "cpp"]?.name} ({languages[langKey ?? "cpp"]?.version})
+                <ChevronDownIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              {Object.entries(languages).map(([key, lang]) => (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => setLangKey(key as keyof typeof languages)}
+                  className="cursor-pointer"
+                >
+                  {lang.name} ({lang.version})
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {/* Hidden input for form submission */}
+          <input
+            type="hidden"
             name="language"
-            className="w-56 cursor-pointer rounded-md border px-3 py-2 text-center text-sm"
             value={langKey ?? "cpp"}
-            style={{ borderColor: "var(--primary)" }}
-            onChange={(e) => setLangKey(e.target.value)}
-          >
-            {Object.entries(languages).map(([key, lang]) => (
-              <option key={key} value={key}>
-                {lang.name} ({lang.version})
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* Vim Mode */}
