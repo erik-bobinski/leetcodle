@@ -17,7 +17,24 @@ export async function GET(request: NextRequest) {
   }
 
   // 2. problem details AI call
-  const problemDetails = await generateProblemDetails();
+  let problemDetails;
+  try {
+    problemDetails = await generateProblemDetails();
+  } catch (error) {
+    console.error("Error calling generateProblemDetails:", error);
+    // Vercel logs can truncate the error object, so let's log key properties
+    if (error instanceof Error && "cause" in error) {
+      console.error("Error cause:", (error as { cause: unknown }).cause);
+    }
+    return new Response("Failed to generate problem details from AI", {
+      status: 500
+    });
+  }
+
+  if (!problemDetails) {
+    console.error("Failed to generate problem details from AI");
+    return new Response("Failed to generate problem details: ", { status: 500 });
+  }
 
   // 3. reference solution AI call
   const referenceSolution = await generateReferenceSolution(
@@ -25,6 +42,12 @@ export async function GET(request: NextRequest) {
     problemDetails.template.functionName,
     problemDetails.template.argNames
   );
+  if (!referenceSolution) {
+    console.error("Failed to generate reference solution from AI");
+    return new Response("Failed to generate reference solution", {
+      status: 500
+    });
+  }
 
   // 4. test cases AI call
   const testCasesSolutions = await generateTestCasesSolutions(
@@ -32,9 +55,19 @@ export async function GET(request: NextRequest) {
     referenceSolution.python,
     problemDetails.template.testArgs.python
   );
+  if (!testCasesSolutions) {
+    console.error("Failed to generate test cases from AI");
+    return new Response("Failed to generate test cases", { status: 500 });
+  }
 
   // 5. generate expected outputs via judge0
   const testCasesFinal = await generateTestCasesOutputs(testCasesSolutions);
+  if (!testCasesFinal || Object.keys(testCasesFinal).length === 0) {
+    console.error("Failed to generate test case outputs from Judge0");
+    return new Response("Failed to generate test case outputs", {
+      status: 500
+    });
+  }
 
   // Check for failed test cases but don't fail the entire process
   const failedTestCases: string[] = [];
