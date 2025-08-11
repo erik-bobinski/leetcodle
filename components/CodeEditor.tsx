@@ -454,13 +454,15 @@ export default function CodeEditor({ template }: { template?: string }) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="cursor-pointer rounded border border-[#2d3a4e] bg-[#1b222c] p-1 text-[#a6accd] transition-colors hover:border-[#4b526d] hover:bg-[#222b3c]"
+                className="flex w-48 cursor-pointer items-center rounded border"
               >
-                {languages[langKey]?.name} ({languages[langKey]?.version})
-                <ChevronDownIcon className="ml-2 h-4 w-4" />
+                <span className="flex-grow text-left">
+                  {languages[langKey]?.name} ({languages[langKey]?.version})
+                </span>
+                <ChevronDownIcon className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent className="w-48">
               {Object.entries(languages).map(([key, lang]) => (
                 <DropdownMenuItem
                   key={key}

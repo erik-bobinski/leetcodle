@@ -41,7 +41,7 @@ export default function ProblemDetails() {
           />
         </>
       ) : (
-        <div> Unexpected state occurred, this should be impossible! </div>
+        <div>Could not find a problem for today.</div>
       )}
     </div>
   );

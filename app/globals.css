@@ -176,20 +176,7 @@ code {
     color: var(--accent-foreground) !important;
 }
 
-/* Force proper colors for the dropdown trigger button */
-[data-slot="dropdown-menu-trigger"] {
-    background-color: var(--background) !important;
-    color: var(--foreground) !important;
-    border-color: var(--border) !important;
-}
-
-/* Ensure CodeEditor dropdown has proper styling */
-[data-slot="dropdown-menu-trigger"] button {
-    /* Override any conflicting button styles */
-    background-color: inherit !important;
-    color: inherit !important;
-    border-color: inherit !important;
-}
+/* Removed forced colors on dropdown triggers so they inherit Button styles */
 
 /* Additional accessibility improvements */
 @media (prefers-contrast: high) {
