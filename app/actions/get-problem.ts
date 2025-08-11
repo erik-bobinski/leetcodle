@@ -11,7 +11,7 @@ export async function getTodaysProblem() {
     .eq("active_date", today)
     .single();
   if (error) {
-    console.error(`Database Error: ${error}`);
+    console.error(`Database Error: ${error.message}`);
   }
 
   // Filter out testArgs from template to prevent exposing test cases
