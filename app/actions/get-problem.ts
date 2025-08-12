@@ -25,7 +25,7 @@ export async function getTodaysProblem() {
 
       const safeTemplateData = { ...templateData };
       delete safeTemplateData.testArgs;
-      data.template = JSON.stringify(safeTemplateData);
+      data.template = safeTemplateData;
     } catch (error) {
       console.error("Failed to parse template JSON:", error);
       // If template is invalid JSON, keep it as is
