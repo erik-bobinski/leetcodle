@@ -15,6 +15,7 @@ export default async function Home() {
 
   // Get the problem data to pass template to CodeEditor
   const problem = await getTodaysProblem();
+  const template = problem?.template ?? null;
 
   return (
     <>
@@ -23,7 +24,7 @@ export default async function Home() {
 
       <main className="flex flex-col md:flex-row">
         <div className="w-0.9 mx-6 md:w-2/3">
-          <CodeEditor template={problem?.template} />
+          <CodeEditor template={template} />
         </div>
 
         <div className="mr-4 flex flex-col items-center">

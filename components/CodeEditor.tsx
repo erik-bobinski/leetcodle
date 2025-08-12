@@ -83,7 +83,11 @@ interface TemplateData {
   jsDocString?: string | Record<string, string>;
 }
 
-export default function CodeEditor({ template }: { template?: string }) {
+export default function CodeEditor({
+  template
+}: {
+  template: TemplateData | null;
+}) {
   const [langKey, setLangKey] = useState<keyof typeof languages>("cpp");
 
   const processBoilerplate = useCallback(
@@ -151,26 +155,11 @@ export default function CodeEditor({ template }: { template?: string }) {
   const [isVim, setIsVim] = useState(false);
   const [tabSizeValue, setTabSizeValue] = useState(2);
 
-  // Parse template JSON if provided
-  const templateData: TemplateData | undefined = template
-    ? (() => {
-        try {
-          // Check if template is already an object
-          const parsed =
-            typeof template === "string" ? JSON.parse(template) : template;
-          return parsed;
-        } catch (error) {
-          console.error("Failed to parse template JSON:", error);
-          return undefined;
-        }
-      })()
-    : undefined;
-
   const [code, setCode] = useState(
     processBoilerplate(
       languages[langKey].boilerplate,
       tabSizeValue,
-      templateData
+      template ?? undefined
     )
   );
   const [tabSize, setTabSize] = useState(indentUnit.of("  "));
@@ -264,29 +253,14 @@ export default function CodeEditor({ template }: { template?: string }) {
   });
 
   useEffect(() => {
-    // Re-parse template data when template changes
-    const currentTemplateData: TemplateData | undefined = template
-      ? (() => {
-          try {
-            // Check if template is already an object
-            return typeof template === "string"
-              ? JSON.parse(template)
-              : template;
-          } catch (error) {
-            console.error("Failed to parse template JSON:", error);
-            return undefined;
-          }
-        })()
-      : undefined;
-
     setCode(
       processBoilerplate(
         languages[langKey].boilerplate,
         tabSizeValue,
-        currentTemplateData
+        template ?? undefined
       )
     );
-  }, [langKey, tabSizeValue, template, processBoilerplate]);
+  }, [langKey, tabSizeValue, processBoilerplate, template]);
 
   const extensions = useMemo(() => {
     return [
