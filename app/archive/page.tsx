@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import Calendar18 from "@/components/calendar-18";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { getArchiveData } from "@/app/actions/get-archive-data";
 
 export default async function Archive() {
   const { userId } = await auth();
@@ -9,6 +10,9 @@ export default async function Archive() {
   if (!userId) {
     return <div>Login to see your history</div>;
   }
+
+  // Fetch archive data server-side
+  const archiveData = await getArchiveData();
 
   return (
     <div className="flex min-h-screen w-full flex-col p-4">
@@ -37,7 +41,7 @@ export default async function Archive() {
       {/* Calendar Content */}
       <div className="flex w-full flex-1 items-center justify-center">
         <div className="flex w-full items-center justify-center">
-          <Calendar18 />
+          <Calendar18 archiveData={archiveData} />
         </div>
       </div>
     </div>

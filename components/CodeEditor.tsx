@@ -428,7 +428,7 @@ export default function CodeEditor({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="flex w-48 cursor-pointer items-center rounded border"
+                className="flex w-56 cursor-pointer items-center rounded border"
               >
                 <span className="flex-grow text-left">
                   {languages[langKey]?.name} ({languages[langKey]?.version})
@@ -436,7 +436,7 @@ export default function CodeEditor({
                 <ChevronDownIcon className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48">
+            <DropdownMenuContent className="w-56">
               {Object.entries(languages).map(([key, lang]) => (
                 <DropdownMenuItem
                   key={key}
@@ -452,7 +452,7 @@ export default function CodeEditor({
             variant="outline"
             onClick={() => setIsVim(!isVim)}
             data-slot="dropdown-menu-trigger"
-            className="cursor-pointer rounded border border-[#2d3a4e] bg-[#1b222c] p-1 text-[#a6accd] transition-colors hover:border-[#4b526d] hover:bg-[#222b3c]"
+            className="cursor-pointer rounded border border-[#2d3a4e] bg-[#1b222c] p-1 transition-colors hover:border-[#4b526d] hover:bg-[#222b3c]"
           >
             {isVim ? "Vim: On" : "Vim: Off"}
           </Button>
