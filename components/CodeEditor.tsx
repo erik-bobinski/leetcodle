@@ -43,7 +43,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 
@@ -249,7 +249,7 @@ export default function CodeEditor({
     queryKey: ["fetchPreferences"],
     queryFn: fetchPreferences,
     refetchOnMount: "always",
-    staleTime: Infinity
+    staleTime: 5 * 60 * 1000
   });
 
   useEffect(() => {
