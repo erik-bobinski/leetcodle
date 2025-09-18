@@ -452,7 +452,7 @@ export default function CodeEditor({
             variant="outline"
             onClick={() => setIsVim(!isVim)}
             data-slot="dropdown-menu-trigger"
-            className="cursor-pointer rounded border border-[#2d3a4e] bg-[#1b222c] p-1 transition-colors hover:border-[#4b526d] hover:bg-[#222b3c]"
+            className="cursor-pointer"
           >
             {isVim ? "Vim: On" : "Vim: Off"}
           </Button>

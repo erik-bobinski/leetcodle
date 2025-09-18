@@ -26,7 +26,7 @@ export default async function Archive() {
           <span className="text-base font-medium">Back to Home</span>
         </Link>
 
-        {/* Archive Header - Centered */}
+        {/* Archive Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight">Archive</h1>
           <p className="text-muted-foreground mt-2 text-lg">

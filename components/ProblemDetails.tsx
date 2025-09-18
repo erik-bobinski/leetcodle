@@ -14,7 +14,7 @@ export default function ProblemDetails({
   problem: Problem | null;
 }) {
   return (
-    <div className="mt-6 mb-8 ml-6 text-center">
+    <div className="mt-6 mr-6 mb-8 ml-6 text-center">
       {problem ? (
         <>
           <h1 className="text-2xl font-bold">{problem.title}</h1>
