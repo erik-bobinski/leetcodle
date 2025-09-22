@@ -2,14 +2,21 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { GearIcon, PinRightIcon } from "@radix-ui/react-icons";
+import {
+  GearIcon,
+  PinRightIcon,
+  ClockIcon,
+  QuestionMarkCircledIcon
+} from "@radix-ui/react-icons";
 import { ModeToggle } from "@/components/ui/ModeToggle";
 import { SignInButton, UserButton, useClerk, useAuth } from "@clerk/nextjs";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import HelpModal from "@/components/HelpModal";
 
 export default function Navigation() {
   const { session } = useClerk();
   const { isLoaded, isSignedIn } = useAuth();
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   // Clear localStorage user preferences when user signs out
   useEffect(() => {
@@ -45,6 +52,25 @@ export default function Navigation() {
           </p>
         </div>
         <div className="flex flex-row items-center gap-4">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 hover:cursor-pointer"
+            onClick={() => setIsHelpModalOpen(true)}
+          >
+            <QuestionMarkCircledIcon className="h-5 w-5" />
+            <span className="sr-only">Help</span>
+          </Button>
+          <Link href="/archive">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 hover:cursor-pointer"
+            >
+              <ClockIcon className="h-5 w-5" />
+              <span className="sr-only">Archive</span>
+            </Button>
+          </Link>
           <Link href="/settings">
             <Button
               variant="outline"
@@ -70,6 +96,12 @@ export default function Navigation() {
           )}
         </div>
       </div>
+
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
+      />
     </header>
   );
 }
