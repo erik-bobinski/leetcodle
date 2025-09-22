@@ -83,7 +83,9 @@ export async function generateProblemDetails() {
       For example: "Given a string \`s\`" or "Return the index of the first \`non-repeating\` character".
       Do NOT use HTML tags like <code> or <pre>. Use only markdown backticks for code formatting.
   
-      Ensure you do not generate a problem similar to these previous ones: ${recentProblems.join(", ")}.
+      Ensure you do not generate a problem that has a similar description or uses data structures 
+      frequently used in these 30 previous problems (i.e. don't create a problem that revolves around a 
+      string input if they are common in these 30 problems): ${recentProblems.join(", ")}.
   
       Generate \`functionName\`, the name of the function(just the name of the function, no parenthesees, etc). 
       Generate \`argNames\`, the names of all the args passed into the function to solve the problem.
