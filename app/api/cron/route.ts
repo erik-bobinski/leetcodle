@@ -33,7 +33,9 @@ export async function GET(request: NextRequest) {
 
   if (!problemDetails) {
     console.error("Failed to generate problem details from AI");
-    return new Response("Failed to generate problem details: ", { status: 500 });
+    return new Response("Failed to generate problem details: ", {
+      status: 500
+    });
   }
 
   // 3. reference solution AI call
