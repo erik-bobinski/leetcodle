@@ -3,9 +3,11 @@ import Wordle from "@/components/Wordle";
 import { getTodaysProblem } from "./actions/get-problem";
 import ProblemDetails from "@/components/ProblemDetails";
 import CodeOutput from "@/components/CodeOutput";
+import { connection } from "next/server";
 
 export default async function Home() {
   // Get the problem data once on the server
+  await connection();
   const problem = await getTodaysProblem();
   const template = problem?.template ?? null;
 
