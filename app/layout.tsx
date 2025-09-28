@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Leetcodle",
-  description: "Daily Coding problem game inspired by Wordle"
+  description: "Daily Coding problems inspired by Wordle"
 };
 
 export default function RootLayout({
