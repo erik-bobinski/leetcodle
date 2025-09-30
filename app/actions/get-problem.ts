@@ -32,5 +32,19 @@ export async function getTodaysProblem() {
     }
   }
 
+  // Parse prerequisite_data_structure JSON if it's a string
+  if (data && data.prerequisite_data_structure) {
+    try {
+      // Check if prerequisite_data_structure is already an object (Supabase might auto-parse JSON columns)
+      data.prerequisite_data_structure =
+        typeof data.prerequisite_data_structure === "string"
+          ? JSON.parse(data.prerequisite_data_structure)
+          : data.prerequisite_data_structure;
+    } catch (error) {
+      console.error("Failed to parse prerequisite_data_structure JSON:", error);
+      // If prerequisite_data_structure is invalid JSON, keep it as is
+    }
+  }
+
   return data;
 }

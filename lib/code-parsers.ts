@@ -1,9 +1,18 @@
-export default function parseUserCode(
-  language: string,
+/**
+ * Inserts a print of user's solution with test-case passed in
+ * @param langKey The programming language of the code
+ * @param sourceCode The source code to parse
+ * @param functionName The name of the function to test
+ * @param testArgs The test case argument(s) to pass to the function
+ * @param indent The number of spaces to use for indentation
+ * @returns User's solution with an appended print statement of testArg passed into solution
+ */
+export default function parseUserCodeForSubmission(
+  langKey: string,
   sourceCode: string,
   functionName: string,
   testArgs: string[],
-  indent: number = 2
+  indent: number
 ) {
   // Helper function to replace {{indent}} placeholders with spaces
   function replaceIndent(code: string): string {
@@ -11,7 +20,7 @@ export default function parseUserCode(
     return code.replace(/\{\{indent\}\}/g, spaces);
   }
 
-  switch (language) {
+  switch (langKey) {
     case "python":
       return replaceIndent(`from typing import (List, Tuple, Dict, Set, Optional, Union, Callable, Any, Iterable, TypeVar, Generic)
 
@@ -65,6 +74,6 @@ fn main() {
 }`);
 
     default:
-      throw new Error(`Unsupported language: ${language}`);
+      throw new Error(`Unsupported language: ${langKey}`);
   }
 }

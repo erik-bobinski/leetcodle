@@ -9,6 +9,8 @@ export default async function Home() {
   await connection();
   const problem = await getTodaysProblem();
   const template = problem?.template ?? null;
+  const prerequisite_data_structure =
+    problem?.prerequisite_data_structure ?? null;
 
   return (
     <>
@@ -17,7 +19,10 @@ export default async function Home() {
 
       <main className="flex flex-col md:flex-row">
         <div className="w-0.9 mx-6 md:w-2/3">
-          <CodeEditor template={template} />
+          <CodeEditor
+            template={template}
+            prerequisiteDataStructure={prerequisite_data_structure}
+          />
         </div>
 
         <div className="mr-4 flex flex-col items-center">
