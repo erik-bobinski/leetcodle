@@ -27,7 +27,7 @@ export default function ProblemDetails({
       ) : (
         <div>
           Could not find a problem for today, please reach out if this happens
-          :&gt;
+          :(
         </div>
       )}
     </div>

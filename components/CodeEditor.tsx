@@ -84,9 +84,11 @@ interface TemplateData {
 }
 
 export default function CodeEditor({
-  template
+  template,
+  prerequisiteDataStructure
 }: {
   template: TemplateData | null;
+  prerequisiteDataStructure: { [lang: string]: string | null };
 }) {
   const [langKey, setLangKey] = useState<keyof typeof languages>("cpp");
 
@@ -96,6 +98,10 @@ export default function CodeEditor({
         /\{\{indent\}\}/g,
         " ".repeat(tabSize)
       );
+
+      if (prerequisiteDataStructure && prerequisiteDataStructure[langKey]) {
+        processed = `${prerequisiteDataStructure[langKey]}\n\n${processed}`;
+      }
 
       if (templateData) {
         // Replace template variables with actual values
@@ -150,7 +156,7 @@ export default function CodeEditor({
 
       return processed;
     },
-    [langKey]
+    [langKey, prerequisiteDataStructure]
   );
   const [isVim, setIsVim] = useState(false);
   const [tabSizeValue, setTabSizeValue] = useState(2);
@@ -319,9 +325,6 @@ export default function CodeEditor({
       alert("Write your program before submitting!");
       return;
     }
-
-    setIsSubmitting(true);
-
     // submit code for grading
     try {
       setIsSubmitting(true);

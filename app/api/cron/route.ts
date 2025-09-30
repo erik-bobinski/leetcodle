@@ -141,7 +141,8 @@ export async function GET(request: NextRequest) {
     test_cases: testCases,
     reference_solution: referenceSolution,
     template: problemDetails.template,
-    active_date: activeDateString
+    active_date: activeDateString,
+    prerequisite_data_structure: problemDetails.prerequisiteDataStructure
   });
 
   if (error) {

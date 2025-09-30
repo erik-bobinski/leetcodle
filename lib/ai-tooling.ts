@@ -73,7 +73,21 @@ export async function generateProblemDetails() {
               and values are their types, and a "returns" key. Example: 
               \'{ "s": "string", "nums": "Array<number>", "returns": "number" }\'`
           )
-        })
+        }),
+        prerequisiteDataStructure: z
+          .union([
+            z.object({
+              cpp: z.string(),
+              go: z.string(),
+              java: z.string(),
+              javascript: z.string(),
+              python: z.string(),
+              rust: z.string(),
+              typescript: z.string()
+            }),
+            z.object({})
+          ])
+          .optional()
       }),
       prompt: `You are creating a daily coding problem in the style of leetcode with easy to medium difficulty.
       You can use various data structures such as arrays, strings, stacks, queues, heaps, trees, linked lists, etc. 
@@ -97,11 +111,15 @@ export async function generateProblemDetails() {
       Generate \`returnType\` which is the return type of the function for a given programming language. 
       Generate \`jsDocString\`, A JSON string where keys are parameter names and values are their types, 
       and a "return" key for the return type. Example: { "s": "string", "nums": "Array<number>", "returns": "number" }
+      Generate \`prerequisiteDataStructure\`, a definition for a prerequisite data structure that the problem uses: 
+      for example a TreeNode class with a self.left, self.right, and self.value if the problem has an input or output as a tree. 
+      Only generate this field if the user needs to know it for the problem, else omit the field.
   
       For any generated field that depends on the programming language's syntax, ensure it is correct.
   
       Generate those instructions for these languages: C++ 17, Go 1.21, Java 13.01, NodeJS 18.15, 
-      TypeScript 5.0, Python 3.11, and Rust 1.70.`,
+      TypeScript 5.0, Python 3.11, and Rust 1.70.
+      `,
       temperature: 1.8
     });
     console.log(`recentProblems: ${recentProblems.join(", ")}`);
