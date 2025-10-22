@@ -1,13 +1,14 @@
 import { CheckIcon, Cross1Icon } from "@radix-ui/react-icons";
 import { ArrowRightIcon } from "@radix-ui/react-icons";
 
-interface SquareProps {
-  value?: string;
-  state?: "empty" | "passed" | "failed";
-}
-
-export default function Wordle() {
-  function Square({ value = "", state = "empty" }: SquareProps) {
+export function Wordle({ attempts }: { attempts: boolean[][] }) {
+  function Square({
+    value = "",
+    state = "empty"
+  }: {
+    value?: string;
+    state?: "empty" | "passed" | "failed";
+  }) {
     function getSquareStyles() {
       switch (state) {
         case "passed":
@@ -54,18 +55,20 @@ export default function Wordle() {
 
   return (
     <div className="flex w-full justify-center">
+      {/* 6 x 6 Grid */}
       <div className="grid w-full max-w-xs grid-cols-6 grid-rows-6 gap-2">
-        {/* Top-left empty cell */}
+        {/* Row 0 Cell 0: Top-left empty cell */}
         <div></div>
-        {/* Top axis: Test Cases → */}
+        {/* Row 0 Cells 1-5: Test Cases Axis, spans remaining 5 squares */}
         <div className="col-span-5 -mb-4 flex items-center justify-center text-sm font-medium select-none">
           Test Cases
           <ArrowRightIcon className="ml-1" />
         </div>
-        {/* Left axis and Wordle squares */}
+        {/* Remaining 5 rows x 6 columns each */}
         {Array.from({ length: 5 })
+          // render user attempts in the grid
           .map((_, rowIdx) => [
-            // Left axis: Attempts → (rotated)
+            // Left axis: Attempts → (rotated vertical)
             <div
               key={`axis-${rowIdx}`}
               className="flex items-center justify-center text-sm font-medium select-none"
@@ -77,10 +80,24 @@ export default function Wordle() {
                 </span>
               ) : null}
             </div>,
-            // Wordle squares for this row
-            ...Array.from({ length: 5 }).map((_, colIdx) => (
-              <Square key={`square-${rowIdx * 5 + colIdx}`} />
-            ))
+            // Make each col for current row
+            ...Array.from({ length: 5 }).map((_, colIdx) => {
+              const attemptData = attempts[rowIdx];
+              const testResult = attemptData?.[colIdx];
+
+              return (
+                <Square
+                  key={`square-${rowIdx * 5 + colIdx}`}
+                  state={
+                    testResult === undefined
+                      ? "empty"
+                      : testResult
+                        ? "passed"
+                        : "failed"
+                  }
+                />
+              );
+            })
           ])
           .flat()}
       </div>

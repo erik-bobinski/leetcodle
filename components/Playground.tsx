@@ -1,0 +1,55 @@
+"use client";
+
+import CodeEditor from "@/components/CodeEditor";
+import CodeOutput from "@/components/CodeOutput";
+import { GetProblem, UserSubmission } from "@/types/database";
+import { useState } from "react";
+
+// TODO: pass latestCode in CodeEditor to init the code state with it
+export default function Playground({
+  template,
+  prerequisiteDataStructure,
+  problemTitle,
+  problemDescription,
+  latestCode
+}: {
+  template: GetProblem["template"];
+  prerequisiteDataStructure: GetProblem["prerequisite_data_structure"];
+  problemTitle: GetProblem["title"];
+  problemDescription: GetProblem["description"];
+  latestCode?: UserSubmission["latest_code"];
+}) {
+  const [executionResult, setExecutionResult] = useState<{
+    stdout: string | null;
+    stderr: string | null;
+    time?: string;
+    memory?: number;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <main className="flex flex-col md:flex-row">
+      <div className="w-0.9 mx-6 md:w-2/3">
+        <CodeEditor
+          template={template}
+          prerequisiteDataStructure={prerequisiteDataStructure}
+          problemTitle={problemTitle}
+          problemDescription={problemDescription}
+          onResult={(result) => {
+            setError(result.error ?? null);
+            setExecutionResult({
+              stdout: result.stdout ?? null,
+              stderr: result.error ?? null,
+              time: result.time,
+              memory: result.memory
+            });
+          }}
+        />
+      </div>
+
+      <div className="mr-4 flex flex-col items-center">
+        <CodeOutput executionResult={executionResult} error={error} />
+      </div>
+    </main>
+  );
+}

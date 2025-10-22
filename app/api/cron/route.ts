@@ -1,10 +1,17 @@
 import type { NextRequest } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase";
 import {
+  generatePrerequisiteDataStructure,
   generateProblemDetails,
   generateReferenceSolution,
   generateTestCasesSolutions
 } from "@/lib/ai-tooling";
+import {
+  type PrerequisiteDataStructure,
+  type ProblemDetails,
+  type ReferenceSolution,
+  type TestCasesSolutions
+} from "@/types/database";
 import { generateTestCasesOutputs } from "@/lib/judge0";
 
 export async function GET(request: NextRequest) {
@@ -16,13 +23,12 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // 2. problem details AI call
-  let problemDetails;
+  let problemDetails: ProblemDetails | undefined;
   try {
     problemDetails = await generateProblemDetails();
   } catch (error) {
     console.error("Error calling generateProblemDetails:", error);
-    // Vercel logs can truncate the error object, so let's log key properties
+    // Vercel logs can truncate the error object, log key properties
     if (error instanceof Error && "cause" in error) {
       console.error("Error cause:", (error as { cause: unknown }).cause);
     }
@@ -30,7 +36,6 @@ export async function GET(request: NextRequest) {
       status: 500
     });
   }
-
   if (!problemDetails) {
     console.error("Failed to generate problem details from AI");
     return new Response("Failed to generate problem details: ", {
@@ -38,12 +43,12 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // 3. reference solution AI call
-  const referenceSolution = await generateReferenceSolution(
-    problemDetails.description,
-    problemDetails.template.functionName,
-    problemDetails.template.argNames
-  );
+  const referenceSolution: ReferenceSolution | undefined =
+    await generateReferenceSolution(
+      problemDetails.description,
+      problemDetails.template.functionName,
+      problemDetails.template.argNames
+    );
   if (!referenceSolution) {
     console.error("Failed to generate reference solution from AI");
     return new Response("Failed to generate reference solution", {
@@ -51,15 +56,31 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // 4. test cases AI call
-  const testCasesSolutions = await generateTestCasesSolutions(
-    problemDetails.description,
-    referenceSolution.python,
-    problemDetails.template.testArgs.python
-  );
+  const testCasesSolutions: TestCasesSolutions | undefined =
+    await generateTestCasesSolutions(
+      problemDetails.description,
+      referenceSolution.python,
+      problemDetails.template.testArgs.python
+    );
   if (!testCasesSolutions) {
     console.error("Failed to generate test cases from AI");
     return new Response("Failed to generate test cases", { status: 500 });
+  }
+
+  // may be necessary for the generate problem
+  let prerequisiteDataStructure: PrerequisiteDataStructure | undefined;
+  try {
+    prerequisiteDataStructure = await generatePrerequisiteDataStructure(
+      problemDetails.title,
+      problemDetails.description,
+      referenceSolution
+    );
+  } catch (e) {
+    if (e instanceof Error) {
+      console.error(e.message);
+    } else {
+      console.error(e);
+    }
   }
 
   // 5. generate expected outputs via judge0
@@ -126,6 +147,21 @@ export async function GET(request: NextRequest) {
   // 7. DB insert
   const supabase = createServiceRoleClient();
 
+  // Get the next problem number
+  const { data: maxProblemData, error: maxProblemError } = await supabase
+    .from("problems")
+    .select("problem_number")
+    .order("problem_number", { ascending: false })
+    .limit(1);
+
+  if (maxProblemError) {
+    console.error("Error getting max problem number:", maxProblemError);
+    return new Response("Database error", { status: 500 });
+  }
+
+  const nextProblemNumber = (maxProblemData?.[0]?.problem_number || 0) + 1;
+  console.log(`📝 Next problem number: ${nextProblemNumber}`);
+
   // Set active_date to a week from now
   const activeDate = new Date();
   activeDate.setDate(activeDate.getDate() + 7);
@@ -134,6 +170,7 @@ export async function GET(request: NextRequest) {
   // Generate a UUID for the id field
   const { error } = await supabase.from("problems").insert({
     id: crypto.randomUUID(),
+    problem_number: nextProblemNumber,
     title: problemDetails.title,
     description: problemDetails.description,
     example_input: problemDetails.example_input,
@@ -142,7 +179,7 @@ export async function GET(request: NextRequest) {
     reference_solution: referenceSolution,
     template: problemDetails.template,
     active_date: activeDateString,
-    prerequisite_data_structure: problemDetails.prerequisiteDataStructure
+    prerequisite_data_structure: prerequisiteDataStructure
   });
 
   if (error) {

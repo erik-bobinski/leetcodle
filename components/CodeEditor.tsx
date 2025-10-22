@@ -35,6 +35,7 @@ import { languages } from "@/types/editor-languages";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { vim } from "@replit/codemirror-vim";
 import { getUser } from "../app/actions/get-preferences";
+import { tryCatch } from "@/lib/try-catch";
 import CodeMirror from "@uiw/react-codemirror";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,8 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
+import { gradeUserCode } from "@/app/actions/grade-solution";
+import type { GetProblem } from "@/types/database";
 
 const leetcodleTheme = createTheme({
   variant: "dark",
@@ -76,63 +79,76 @@ const leetcodleTheme = createTheme({
   ]
 });
 
-interface TemplateData {
-  typedArgs: Record<string, string[]>;
-  returnType: Record<string, string>;
-  functionName: string;
-  jsDocString?: string | Record<string, string>;
-}
-
 export default function CodeEditor({
   template,
-  prerequisiteDataStructure
+  prerequisiteDataStructure,
+  problemTitle,
+  problemDescription,
+  onResult
 }: {
-  template: TemplateData | null;
-  prerequisiteDataStructure: { [lang: string]: string | null };
+  template: GetProblem["template"];
+  prerequisiteDataStructure: GetProblem["prerequisite_data_structure"];
+  problemTitle: GetProblem["title"];
+  problemDescription: GetProblem["description"];
+  onResult?: (result: {
+    graded: boolean;
+    hint: string | null;
+    isCorrect: boolean[];
+    time?: string;
+    memory?: number;
+    error?: string | null;
+    stdout?: string | null;
+  }) => void;
 }) {
   const [langKey, setLangKey] = useState<keyof typeof languages>("cpp");
 
   const processBoilerplate = useCallback(
-    (boilerplate: string, tabSize: number = 4, templateData?: TemplateData) => {
+    (
+      boilerplate: string,
+      tabSize: number = 4,
+      templateData?: GetProblem["template"]
+    ) => {
       let processed = boilerplate.replace(
         /\{\{indent\}\}/g,
         " ".repeat(tabSize)
       );
 
-      if (prerequisiteDataStructure && prerequisiteDataStructure[langKey]) {
-        processed = `${prerequisiteDataStructure[langKey]}\n\n${processed}`;
-      }
-
       if (templateData) {
         // Replace template variables with actual values
         processed = processed.replace(
           /\{\{functionName\}\}/g,
-          templateData.functionName
+          templateData.function_name
         );
 
-        // Handle args - join them with commas for the current language
-        const currentLangArgs = templateData.typedArgs[langKey] || [];
-        const argsString = currentLangArgs.join(", ");
+        // Handle args - parse JSON and join them with commas for the current language
+        const currentLangArgs = templateData.typed_args[langKey];
+        let argsString = "";
+        if (currentLangArgs) {
+          try {
+            const parsedArgs = JSON.parse(currentLangArgs.typed_args);
+            argsString = parsedArgs.join(", ");
+          } catch {
+            argsString = "";
+          }
+        }
         processed = processed.replace(/\{\{args\}\}/g, argsString);
 
         // Handle return type based on current language
-        const returnType = templateData.returnType[langKey] || "void";
+        const returnType = currentLangArgs?.return_type || "void";
         processed = processed.replace(/\{\{returns\}\}/g, returnType);
 
         // Handle JavaScript JSDoc generation
-        if (langKey === "javascript" && templateData.jsDocString) {
+        if (langKey === "javascript" && templateData.js_doc_string) {
           // Generate JSDoc comments
           const jsDocLines: string[] = [];
 
           // Parse the JSON-formatted jsDocString
           let jsDocData: Record<string, string>;
           try {
-            jsDocData =
-              typeof templateData.jsDocString === "string"
-                ? JSON.parse(templateData.jsDocString)
-                : templateData.jsDocString;
+            jsDocData = JSON.parse(templateData.js_doc_string);
           } catch (error) {
             console.error("Failed to parse jsDocString JSON:", error);
+            alert(`Failed to parse jsDocString JSON:, ${error}`);
             return processed;
           }
 
@@ -152,6 +168,14 @@ export default function CodeEditor({
           const jsDocBlock = `/**\n${jsDocLines.join("\n")}\n */\n`;
           processed = jsDocBlock + processed;
         }
+      }
+
+      // Add prerequisiteDataStructure at the very top (after JSDoc if present)
+      const prerequisiteCode = prerequisiteDataStructure?.find(
+        (obj) => obj.language === langKey
+      );
+      if (prerequisiteCode) {
+        processed = `${prerequisiteCode.data_structure_code}\n\n${processed}`;
       }
 
       return processed;
@@ -175,71 +199,105 @@ export default function CodeEditor({
 
   async function fetchPreferences() {
     // 1. check for prefs in local storage
-    const localPrefs = localStorage.getItem("userPreferences");
+    const { data: localPrefs, error: getItemError } = await tryCatch(
+      Promise.resolve(localStorage.getItem("userPreferences"))
+    );
+    if (getItemError) {
+      console.error(
+        "Failed to get preferences from localStorage:",
+        getItemError
+      );
+      alert(`Failed to access local storage: ${getItemError.message}`);
+    }
+
     if (localPrefs !== null) {
-      try {
-        const parsedPrefs = JSON.parse(localPrefs);
-        if (parsedPrefs.language && parsedPrefs.language in languages) {
-          setLangKey(parsedPrefs.language);
-        }
-        if (parsedPrefs.vim_mode !== null) {
-          setIsVim(parsedPrefs.vim_mode);
-        }
-        if (parsedPrefs.tab_size !== null) {
-          setTabSizeValue(parsedPrefs.tab_size);
-          setTabSize(indentUnit.of(" ".repeat(parsedPrefs.tab_size)));
-        }
-        if (parsedPrefs.font_size !== null) {
-          setFontSize(parsedPrefs.font_size);
-        }
-        if (parsedPrefs.line_numbers !== null) {
-          setIsLineNumbers(parsedPrefs.line_numbers);
-        }
-        return {
-          ...parsedPrefs
-        };
-      } catch (e) {
-        console.error("Failed to parse local userPrefernces: ", e);
+      const { data: parsedPrefs, error: jsonParseError } = await tryCatch(
+        Promise.resolve(JSON.parse(localPrefs))
+      );
+      if (jsonParseError) {
+        console.error("Failed to parse local userPreferences:", jsonParseError);
+        alert(`Failed to parse saved preferences: ${jsonParseError.message}`);
+        return;
       }
+
+      // safely update react state
+      if ("language" in parsedPrefs && parsedPrefs.language in languages) {
+        setLangKey(parsedPrefs.language);
+      }
+      if ("vim_mode" in parsedPrefs && parsedPrefs.vim_mode !== null) {
+        setIsVim(parsedPrefs.vim_mode);
+      }
+      if ("tab_size" in parsedPrefs && parsedPrefs.tab_size !== null) {
+        setTabSizeValue(parsedPrefs.tab_size);
+        setTabSize(indentUnit.of(" ".repeat(parsedPrefs.tab_size)));
+      }
+      if ("font_size" in parsedPrefs && parsedPrefs.font_size !== null) {
+        setFontSize(parsedPrefs.font_size);
+      }
+      if ("line_numbers" in parsedPrefs && parsedPrefs.line_numbers !== null) {
+        setIsLineNumbers(parsedPrefs.line_numbers);
+      }
+      return {
+        ...parsedPrefs
+      };
     }
 
     // 2. resort to DB fetch
-    try {
-      const prefsFromDB = await getUser();
-      if (prefsFromDB) {
-        if (prefsFromDB.language && prefsFromDB.language in languages) {
-          setLangKey(prefsFromDB.language as keyof typeof languages);
-        }
-        if (prefsFromDB.vim_mode !== null) {
-          setIsVim(prefsFromDB.vim_mode);
-        }
-        if (prefsFromDB.tab_size !== null) {
-          setTabSizeValue(prefsFromDB.tab_size);
-          setTabSize(indentUnit.of(" ".repeat(prefsFromDB.tab_size)));
-        }
-        if (prefsFromDB.font_size !== null) {
-          setFontSize(prefsFromDB.font_size);
-        }
-        if (prefsFromDB.line_numbers !== null) {
-          setIsLineNumbers(prefsFromDB.line_numbers);
-        }
-        localStorage.setItem(
-          "userPreferences",
-          JSON.stringify({
-            language: prefsFromDB.language,
-            vim_mode: prefsFromDB.vim_mode,
-            font_size: prefsFromDB.font_size,
-            tab_size: prefsFromDB.tab_size,
-            line_numbers: prefsFromDB.line_numbers
-          })
-        );
-        return {
-          ...prefsFromDB
-        };
-      }
-    } catch (e) {
-      console.error("Failed to get preferences from database: ", e);
+    const result = await getUser();
+    if (result === null) {
+      console.error("No current user was found");
+      alert("No current user was found. Please sign in again.");
+      return;
     }
+    if ("error" in result) {
+      console.error("Failed to get preferences from database:", result.error);
+      alert(`Failed to load preferences from server: ${result.error}`);
+      return;
+    }
+
+    const prefsFromDB = { ...result };
+    if (prefsFromDB) {
+      if (prefsFromDB.language && prefsFromDB.language in languages) {
+        setLangKey(prefsFromDB.language as keyof typeof languages);
+      }
+      if (prefsFromDB.vim_mode !== null) {
+        setIsVim(prefsFromDB.vim_mode);
+      }
+      if (prefsFromDB.tab_size !== null) {
+        setTabSizeValue(prefsFromDB.tab_size);
+        setTabSize(indentUnit.of(" ".repeat(prefsFromDB.tab_size)));
+      }
+      if (prefsFromDB.font_size !== null) {
+        setFontSize(prefsFromDB.font_size);
+      }
+      if (prefsFromDB.line_numbers !== null) {
+        setIsLineNumbers(prefsFromDB.line_numbers);
+      }
+
+      const { error: localStorageError } = await tryCatch(
+        Promise.resolve(
+          localStorage.setItem(
+            "userPreferences",
+            JSON.stringify({
+              language: prefsFromDB.language,
+              vim_mode: prefsFromDB.vim_mode,
+              font_size: prefsFromDB.font_size,
+              tab_size: prefsFromDB.tab_size,
+              line_numbers: prefsFromDB.line_numbers
+            })
+          )
+        )
+      );
+      if (localStorageError) {
+        console.error("Error saving to localStorage:", localStorageError);
+        alert(
+          `Failed to save preferences locally: ${localStorageError.message}`
+        );
+      }
+    }
+    return {
+      ...prefsFromDB
+    };
 
     // 3. Last resort, use default preferences
     return {
@@ -320,6 +378,7 @@ export default function CodeEditor({
     ];
   }, [isVim, langKey, fontSize, isLineNumbers, tabSize]);
 
+  // TODO: use tryCatch wrapper once submission flow is implemented
   async function handleSubmit() {
     if (!code.trim() || code === languages[langKey].boilerplate) {
       alert("Write your program before submitting!");
@@ -328,8 +387,27 @@ export default function CodeEditor({
     // submit code for grading
     try {
       setIsSubmitting(true);
-      // const languageId = languages[langKey].language_id;
-      // const token = await submitCode(currentCode, languageId);
+      const result = await gradeUserCode(
+        langKey,
+        code,
+        template?.function_name ?? "",
+        tabSizeValue,
+        problemTitle,
+        problemDescription
+      );
+      if (onResult) {
+        onResult(
+          result as {
+            graded: boolean;
+            hint: string | null;
+            isCorrect: boolean[];
+            time?: string;
+            memory?: number;
+            error?: string | null;
+            stdout?: string | null;
+          }
+        );
+      }
     } catch (e) {
       alert(e);
     } finally {

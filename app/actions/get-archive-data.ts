@@ -1,8 +1,11 @@
+// TODO: migrate all server actions to drizzle, update corresponding client logic, and use tryCatch() wrapper
+
 "use server";
 
 import { supabase } from "@/lib/supabase";
 import { auth } from "@clerk/nextjs/server";
 
+// TODO: Refactor this function to use user-submisson table
 export type ArchiveData = {
   date: string; // YYYY-MM-DD format
   problem: {
@@ -22,7 +25,6 @@ export async function getArchiveData(): Promise<ArchiveData[]> {
     const { userId } = await auth();
 
     if (!userId) {
-      console.error("No authenticated user found");
       return [];
     }
 

@@ -1,50 +1,102 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { db } from "@/drizzle";
+import { eq } from "drizzle-orm";
+import {
+  PrerequisiteDataStructuresTable,
+  ProblemsTable,
+  TemplateArgsTable,
+  TemplatesTable
+} from "@/drizzle/schema";
+import { tryCatch } from "@/lib/try-catch";
 
-export async function getTodaysProblem() {
-  const now = new Date();
-  const today = now.toISOString().split("T")[0];
-  const { data, error } = await supabase
-    .from("problems")
-    .select("*")
-    .eq("active_date", today)
-    .single();
-  if (error) {
-    console.error(`Database Error: ${error.message}`);
+export async function getProblem(date?: string) {
+  const targetDate = date || new Date().toISOString().split("T")[0];
+
+  const { data: problemDataArray, error: problemError } = await tryCatch(
+    db
+      .select()
+      .from(ProblemsTable)
+      .where(eq(ProblemsTable.active_date, targetDate))
+      .limit(1)
+  );
+  if (problemError) {
+    return { error: `${problemError.message}` };
+  }
+  if (problemDataArray === null || problemDataArray.length === 0) {
+    return { error: `No problem found for the date: ${targetDate}` };
+  }
+  const problemData = problemDataArray[0];
+
+  const { data: dataStructure, error: dataStructureError } = await tryCatch(
+    db
+      .select()
+      .from(PrerequisiteDataStructuresTable)
+      .where(eq(PrerequisiteDataStructuresTable.problem_id, problemData.id))
+  );
+  if (dataStructureError) {
+    return {
+      error: `There was an error getting prerequisiteDataStructure from database: ${dataStructureError.message}`
+    };
   }
 
-  // Filter out testArgs from template to prevent exposing test cases
-  if (data && data.template) {
-    try {
-      // Check if template is already an object (Supabase might auto-parse JSON columns)
-      const templateData =
-        typeof data.template === "string"
-          ? JSON.parse(data.template)
-          : data.template;
-
-      const safeTemplateData = { ...templateData };
-      delete safeTemplateData.testArgs;
-      data.template = safeTemplateData;
-    } catch (error) {
-      console.error("Failed to parse template JSON:", error);
-      // If template is invalid JSON, keep it as is
-    }
+  const { data: templateData, error: templateError } = await tryCatch(
+    db
+      .select()
+      .from(TemplatesTable)
+      .where(eq(TemplatesTable.problem_id, problemData.id))
+  );
+  if (templateError) {
+    return {
+      error: `There was an error getting the template for the problem: ${templateError.message}`
+    };
+  }
+  if (templateData === null || templateData.length === 0) {
+    return { error: `No template found for the problem` };
   }
 
-  // Parse prerequisite_data_structure JSON if it's a string
-  if (data && data.prerequisite_data_structure) {
-    try {
-      // Check if prerequisite_data_structure is already an object (Supabase might auto-parse JSON columns)
-      data.prerequisite_data_structure =
-        typeof data.prerequisite_data_structure === "string"
-          ? JSON.parse(data.prerequisite_data_structure)
-          : data.prerequisite_data_structure;
-    } catch (error) {
-      console.error("Failed to parse prerequisite_data_structure JSON:", error);
-      // If prerequisite_data_structure is invalid JSON, keep it as is
-    }
+  const { data: templateArgsData, error: templateArgsError } = await tryCatch(
+    db
+      .select()
+      .from(TemplateArgsTable)
+      .where(eq(TemplateArgsTable.template_id, templateData[0].id))
+  );
+  if (templateArgsError) {
+    return {
+      error: `There was an error getting the template for the problem: ${templateArgsError.message}`
+    };
+  }
+  if (templateArgsData === null || templateArgsData.length === 0) {
+    return { error: `No template arguments found for the problem` };
   }
 
-  return data;
+  const safeTemplateArgs = templateArgsData.map(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ({ test_args, ...rest }) => rest
+  );
+
+  // Build template obj with static template data and nested language-specific typed_args
+  const template = {
+    ...templateData[0],
+    typed_args: safeTemplateArgs.reduce(
+      (acc, templateArg) => ({
+        ...acc,
+        [templateArg.language]: {
+          id: templateArg.id,
+          template_id: templateArg.template_id,
+          typed_args: templateArg.typed_args,
+          return_type: templateArg.return_type
+        }
+      }),
+      {}
+    )
+  };
+
+  const problem = {
+    ...problemData,
+    prerequisite_data_structure: dataStructure,
+    template
+  };
+
+  return problem;
 }

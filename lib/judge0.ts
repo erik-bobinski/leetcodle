@@ -21,6 +21,7 @@ export async function submitCode(
   language_id: number
 ): Promise<Judge0ExecutionResponse | string> {
   try {
+    const compiler_options = language_id === 54 ? "-std=c++17" : null;
     const baseUrl = getBaseUrl();
     const response = await fetch(`${baseUrl}/api/judge0?wait=true`, {
       method: "POST",
@@ -29,7 +30,8 @@ export async function submitCode(
       },
       body: JSON.stringify({
         source_code,
-        language_id
+        language_id,
+        compiler_options
       })
     });
     const data = (await response.json()) as Judge0ExecutionResponse;

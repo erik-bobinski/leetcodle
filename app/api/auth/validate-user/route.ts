@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase";
 
+/* TODO: Properly sync Clerk with external DB: https://clerk.com/docs/guides/development/webhooks/syncing
+User CRUD from Leetcodle DB should extend to Clerk db/dashboard
+User CRUD from Clerk db/dashboard should extent to Leetcodle DB */
 export async function POST(request: NextRequest) {
+  // Security check
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.API_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { email } = await request.json();
 
