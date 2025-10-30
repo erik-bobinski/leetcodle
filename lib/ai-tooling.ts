@@ -8,8 +8,12 @@ import { ProblemsTable } from "@/drizzle/schema";
 import {
   problemDetailsSchema,
   referenceSolutionSchema,
-  prerequisiteDataStructureSchema
+  prerequisiteDataStructureSchema,
+  gradeSolutionOutputSchema,
+  Problems,
+  GradeSolutionOutput
 } from "@/types/database";
+
 async function getRecentProblemTitles() {
   const { data: recentProblems, error: recentProblemsError } = await tryCatch(
     db
@@ -167,4 +171,36 @@ export async function generatePrerequisiteDataStructure(
   }
 
   return data.object;
+}
+
+// TODO: update this fn with new db schema for user submission flow
+export async function gradeSolutionOutput(
+  userTestCases: Record<string, string>,
+  expectedTestCases: Problems["test_cases"],
+  problemTitle: string,
+  problemDescription: string
+): Promise<GradeSolutionOutput | undefined> {
+  try {
+    const { object } = await generateObject({
+      model: google("gemini-2.5-pro"),
+      schema: gradeSolutionOutputSchema,
+      system:
+        "You are grading a solution to a coding problem for an online coding platform. You are given 5 test cases, and the solution's output to those 5 test cases. A test case is passed if the output is the same as the expected output, accounting for minor language-specific syntax differences.",
+      prompt: `Here is the problem title: ${problemTitle}.
+      Here is the problem description: ${problemDescription}.
+      Here are the user's inputs and outputs: ${userTestCases}.
+      Here are the expected inputs and outputs: ${expectedTestCases}.
+      \`graded\`: Were you able to grade each output?
+      \`hint\`: A hint to give the user without plainly giving them an answer. If their solution meets every test case, make the hint an empty string.
+      \`isCorrect\` An array of booleans that state whether a test case was correctly met.
+      Ensure you order this array in the same order as \`outputs\` and \`expectedOutputs\`, so their positions all correspond to each other!
+
+      Keep in mind problems that expect an iterable as an output may not care about the order of items in the iterable.
+      If the problem cares about the order, ensure you grade based on order. If it does not care about order, then you should not either when grading.`
+    });
+    return object;
+  } catch (error) {
+    console.error("Error grading solution output:", error);
+    return undefined;
+  }
 }
