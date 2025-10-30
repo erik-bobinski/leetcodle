@@ -113,7 +113,6 @@ export const TemplateArgsTable = pgTable(
       .references(() => TemplatesTable.id, { onDelete: "cascade" }),
     language: text("language").notNull(), // 'cpp', 'python', 'javascript', etc.
     typed_args: text("typed_args").notNull(), // JSON array as text: ["string s", "Array<number> nums"]
-    test_args: text("test_args").notNull(), // JSON array as text: ['"hello"', '[1,2,3]']
     return_type: text("return_type").notNull() // "number", "string", etc.
   },
   (table) => [
@@ -142,6 +141,7 @@ export const TestCasesTable = pgTable(
     problem_id: uuid("problem_id")
       .notNull()
       .references(() => ProblemsTable.id, { onDelete: "cascade" }),
+    language: text("language").notNull(), // e.g., 'cpp', 'python', 'javascript'
     input: text("input").notNull(), // The function input (e.g., "[1,2,3]" or '"hello"')
     expected_output: text("expected_output").notNull(), // The expected output (e.g., "6" or '"olleh"')
     test_case_number: integer("test_case_number").notNull(), // 1, 2, 3, etc. for ordering
@@ -151,9 +151,11 @@ export const TestCasesTable = pgTable(
   },
   (table) => [
     index("test_cases_problem_id_idx").on(table.problem_id),
-    unique("test_cases_problem_number_unique").on(
+    index("test_cases_language_idx").on(table.language),
+    unique("test_cases_problem_number_language_unique").on(
       table.problem_id,
-      table.test_case_number
+      table.test_case_number,
+      table.language
     ),
     // Enable RLS
     sql`ALTER TABLE test_cases ENABLE ROW LEVEL SECURITY`,

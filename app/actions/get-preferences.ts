@@ -28,7 +28,7 @@ export async function getUser() {
 
   // Check if user exists
   if (!userData || userData.length === 0) {
-    return { error: "No user data found in database" };
+    return null;
   }
 
   // Return the first (and only) user record, excluding sensitive fields

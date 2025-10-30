@@ -1,48 +1,129 @@
-// TODO: migrate all server actions to drizzle, update corresponding client logic, and use tryCatch() wrapper
-
 "use server";
 
-import { supabase } from "@/lib/supabase";
-import { UserSubmission } from "@/types/database";
+import { tryCatch } from "@/lib/try-catch";
 import { auth } from "@clerk/nextjs/server";
+import { db } from "@/drizzle";
+import { eq, and, desc } from "drizzle-orm";
+import {
+  ProblemsTable,
+  UserSubmissionsTable,
+  UserSubmissionAttemptsTable,
+  UserSubmissionCodeTable
+} from "@/drizzle/schema";
 
-export async function getUserSubmission(
-  date?: string
-): Promise<UserSubmission | null> {
-  const { userId } = await auth();
+export async function getUserSubmission(date?: string) {
+  const { data: authData, error: authError } = await tryCatch(auth());
+  if (authError) {
+    return { error: authError.message };
+  }
+  if (!authData) {
+    return null;
+  }
+  const { userId } = authData;
   if (!userId) {
     return null;
   }
 
-  // Use provided date or default to today
   const targetDate = date || new Date().toISOString().split("T")[0];
 
-  // get problem ID for the target date
-  const { data: problem, error: problemError } = await supabase
-    .from("problems")
-    .select("id")
-    .eq("active_date", targetDate)
-    .single();
+  const { data: problemData, error: problemError } = await tryCatch(
+    db
+      .select()
+      .from(ProblemsTable)
+      .where(eq(ProblemsTable.active_date, targetDate))
+      .limit(1)
+  );
   if (problemError) {
-    throw new Error(
-      `Problem fetch error in get-user-submission.ts: ${problemError.message}`
-    );
-    return null;
+    return { error: problemError.message };
   }
+  if (!problemData) {
+    return { error: `Problem not found for the date: ${targetDate}` };
+  }
+  const problem = problemData[0];
 
   // get user's attempts for the target date's problem
-  const { data, error } = await supabase
-    .from("user_submissions")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("problem_id", problem.id)
-    .order("created_at", { ascending: true })
-    .maybeSingle();
-  if (error) {
-    throw new Error(
-      `Database Error in get-user-submission.ts: ${error.message}`
+  const { data: userSubmissionData, error: userSubmissionError } =
+    await tryCatch(
+      db
+        .select()
+        .from(UserSubmissionsTable)
+        .where(
+          and(
+            eq(UserSubmissionsTable.user_id, userId),
+            eq(UserSubmissionsTable.problem_id, problem.id)
+          )
+        )
+        .orderBy(desc(UserSubmissionsTable.created_at))
+        .limit(1)
     );
+  if (userSubmissionError) {
+    return {
+      error: `Error getting user submission: ${userSubmissionError.message}`
+    };
+  }
+  if (!userSubmissionData || userSubmissionData.length === 0) {
+    return null;
+  }
+  const userSubmission = userSubmissionData[0];
+
+  const { data: userSubmissionsCodeData, error: userSubmissionCodeError } =
+    await tryCatch(
+      db
+        .select()
+        .from(UserSubmissionCodeTable)
+        .where(eq(UserSubmissionCodeTable.submission_id, userSubmission.id))
+        .limit(1)
+    );
+  if (userSubmissionCodeError) {
+    return {
+      error: `Error getting user submission code: ${userSubmissionCodeError.message}`
+    };
+  }
+  if (!userSubmissionsCodeData) {
+    return null;
+  }
+  const userSubmissionCode = userSubmissionsCodeData[0];
+
+  const { data: userSubmissionAttemptData, error: userSubmissionAttemptError } =
+    await tryCatch(
+      db
+        .select()
+        .from(UserSubmissionAttemptsTable)
+        .where(eq(UserSubmissionAttemptsTable.submission_id, userSubmission.id))
+        .orderBy(desc(UserSubmissionAttemptsTable.attempt_number))
+    );
+  if (userSubmissionAttemptError) {
+    return {
+      error: `Error getting user submission attempt: ${userSubmissionAttemptError.message}`
+    };
+  }
+  if (!userSubmissionAttemptData || userSubmissionAttemptData.length === 0) {
+    return {
+      userSubmissionCode: {
+        language: userSubmissionCode.language,
+        code: userSubmissionCode.code
+      },
+      userSubmissionAttempts: []
+    };
   }
 
-  return data as UserSubmission;
+  // Parse the test_case_results JSON string for each attempt
+  const attempts = userSubmissionAttemptData.map((attempt) => {
+    try {
+      const testCaseResults = JSON.parse(
+        attempt.test_case_results
+      ) as boolean[];
+      return testCaseResults;
+    } catch {
+      return [];
+    }
+  });
+
+  return {
+    userSubmissionCode: {
+      language: userSubmissionCode.language,
+      code: userSubmissionCode.code
+    },
+    userSubmissionAttempts: attempts
+  };
 }

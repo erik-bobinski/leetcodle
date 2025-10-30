@@ -7,7 +7,9 @@ export default function ProblemDetails({ problem }: { problem: GetProblem }) {
     <div className="mt-6 mr-6 mb-8 ml-6 text-center">
       {problem ? (
         <>
-          <h1 className="text-2xl font-bold">{problem.title}</h1>
+          <h1 className="text-2xl font-bold">
+            {problem.problem_number}. {problem.title}
+          </h1>
           <ReactMarkdown>{problem.description}</ReactMarkdown>
           <ExampleBox
             input={problem.example_input}

@@ -2,10 +2,9 @@
 
 import CodeEditor from "@/components/CodeEditor";
 import CodeOutput from "@/components/CodeOutput";
-import { GetProblem, UserSubmission } from "@/types/database";
+import { GetProblem, UserSubmissionCode } from "@/types/database";
 import { useState } from "react";
 
-// TODO: pass latestCode in CodeEditor to init the code state with it
 export default function Playground({
   template,
   prerequisiteDataStructure,
@@ -17,7 +16,7 @@ export default function Playground({
   prerequisiteDataStructure: GetProblem["prerequisite_data_structure"];
   problemTitle: GetProblem["title"];
   problemDescription: GetProblem["description"];
-  latestCode?: UserSubmission["latest_code"];
+  latestCode?: UserSubmissionCode | null;
 }) {
   const [executionResult, setExecutionResult] = useState<{
     stdout: string | null;
@@ -35,7 +34,7 @@ export default function Playground({
           prerequisiteDataStructure={prerequisiteDataStructure}
           problemTitle={problemTitle}
           problemDescription={problemDescription}
-          onResult={(result) => {
+          onSubmissionResult={(result) => {
             setError(result.error ?? null);
             setExecutionResult({
               stdout: result.stdout ?? null,
@@ -44,6 +43,7 @@ export default function Playground({
               memory: result.memory
             });
           }}
+          latestCode={latestCode}
         />
       </div>
 

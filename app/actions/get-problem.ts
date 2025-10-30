@@ -69,16 +69,12 @@ export async function getProblem(date?: string) {
   if (templateArgsData === null || templateArgsData.length === 0) {
     return { error: `No template arguments found for the problem` };
   }
-
-  const safeTemplateArgs = templateArgsData.map(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ({ test_args, ...rest }) => rest
-  );
+  const templateArgs = templateArgsData;
 
   // Build template obj with static template data and nested language-specific typed_args
   const template = {
     ...templateData[0],
-    typed_args: safeTemplateArgs.reduce(
+    typed_args: templateArgs.reduce(
       (acc, templateArg) => ({
         ...acc,
         [templateArg.language]: {

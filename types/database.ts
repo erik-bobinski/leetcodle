@@ -4,7 +4,8 @@ import {
   ProblemsTable,
   TemplatesTable,
   TemplateArgsTable,
-  PrerequisiteDataStructuresTable
+  PrerequisiteDataStructuresTable,
+  UserSubmissionCodeTable
 } from "@/drizzle/schema";
 import { InferSelectModel } from "drizzle-orm";
 
@@ -15,15 +16,16 @@ export type TemplateArgsTable = InferSelectModel<typeof TemplateArgsTable>;
 export type PrerequisiteDataStructureTable = InferSelectModel<
   typeof PrerequisiteDataStructuresTable
 >;
+export type UserSubmissionCode = Pick<
+  InferSelectModel<typeof UserSubmissionCodeTable>,
+  "language" | "code"
+>;
 
 // Type for the problem object returned by getProblem action
 // This represents the joined/constructed object with relations
 export type GetProblem = ProblemTable & {
   template: TemplateTable & {
-    typed_args: Record<
-      keyof typeof languages,
-      Omit<TemplateArgsTable, "test_args">
-    >;
+    typed_args: Record<keyof typeof languages, TemplateArgsTable>;
   };
   prerequisite_data_structure: PrerequisiteDataStructureTable[] | null;
 };
@@ -48,7 +50,16 @@ export const problemDetailsSchema = z.object({
       rust: z.array(z.string()),
       typescript: z.array(z.string())
     }),
-    testArgs: z.object({
+    testInputs: z.object({
+      cpp: z.array(z.string()),
+      go: z.array(z.string()),
+      java: z.array(z.string()),
+      javascript: z.array(z.string()),
+      python: z.array(z.string()),
+      rust: z.array(z.string()),
+      typescript: z.array(z.string())
+    }),
+    testOutputs: z.object({
       cpp: z.array(z.string()),
       go: z.array(z.string()),
       java: z.array(z.string()),
@@ -67,8 +78,8 @@ export const problemDetailsSchema = z.object({
       typescript: z.string()
     }),
     jsDocString: z.string().describe(
-      `A JSON string where keys are parameter names 
-        and values are their types, and a "returns" key. Example: 
+      `A JSON string where keys are parameter names
+        and values are their types, and a "returns" key. Example:
         \'{ "s": "string", "nums": "Array<number>", "returns": "number" }\'`
     )
   })

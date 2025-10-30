@@ -5,17 +5,15 @@ import Playground from "@/components/Playground";
 import { Wordle } from "@/components/Wordle";
 import { getUserSubmission } from "./actions/get-user-submission";
 
-// TODO: give some immediate feedback when changing routes, maybe via Loading.tsx?
-// TODO: refactor getUserSubmission to use drizzle and tryCatch() wrapper
 export default async function Home({
   searchParams
 }: {
-  searchParams: { date?: string };
+  searchParams: Promise<{ date?: string }>;
 }) {
   await connection();
-  const getProblemResult = await getProblem(searchParams.date);
+  const params = await searchParams;
+  const getProblemResult = await getProblem(params.date);
 
-  // Handle error case
   if ("error" in getProblemResult) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -25,8 +23,14 @@ export default async function Home({
           </h1>
           <p className="mb-2 text-lg text-gray-700">{getProblemResult.error}</p>
           <p className="text-sm text-gray-500">
-            Please try refreshing the page or reach out to
-            twitter.com/erikbobinski if the issue persists!
+            Please try refreshing the page or reach out to{" "}
+            <a
+              href="https://twitter.com/erikbobinski"
+              className="text-blue-500 hover:underline"
+            >
+              twitter.com/erikbobinski
+            </a>{" "}
+            if the issue persists!
           </p>
         </div>
       </div>
@@ -37,7 +41,32 @@ export default async function Home({
   const template = problem.template;
   const prerequisite_data_structure =
     problem.prerequisite_data_structure ?? null;
-  const userSubmission = await getUserSubmission(searchParams.date);
+
+  const userSubmissionResult = await getUserSubmission(params.date);
+  if (userSubmissionResult !== null && "error" in userSubmissionResult) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="mb-4 text-xl font-bold text-red-600">
+            Error Loading Problem
+          </h1>
+          <p className="mb-2 text-lg text-gray-700">
+            {userSubmissionResult.error}
+          </p>
+          <p className="text-sm text-gray-500">
+            Please try refreshing the page or reach out to{" "}
+            <a
+              href="https://twitter.com/erikbobinski"
+              className="text-blue-500 hover:underline"
+            >
+              twitter.com/erikbobinski
+            </a>{" "}
+            if the issue persists!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -45,13 +74,13 @@ export default async function Home({
       <ProblemDetails problem={problem} />
 
       <Playground
-        latestCode={userSubmission?.latest_code}
+        latestCode={userSubmissionResult?.userSubmissionCode}
         template={template}
         prerequisiteDataStructure={prerequisite_data_structure}
         problemTitle={problem?.title}
         problemDescription={problem?.description}
       />
-      <Wordle attempts={userSubmission?.attempts ?? []} />
+      <Wordle attempts={userSubmissionResult?.userSubmissionAttempts ?? []} />
     </>
   );
 }

@@ -72,52 +72,91 @@ export default function SettingsPage() {
     if (result === null) {
       setMessage({
         type: "error",
-        text: "No current user was found, this shouldn't be possible since route is auth protected"
+        text: "No current user was found, this shouldn't be possible since settings route is auth protected"
       });
-      return;
+      // Return default preferences
+      return {
+        language: "cpp",
+        vim_mode: false,
+        font_size: null,
+        tab_size: 2,
+        line_numbers: true
+      };
     }
     if ("error" in result) {
       setMessage({ type: "error", text: `${result.error}` });
-      return;
+      // Return default preferences
+      return {
+        language: "cpp",
+        vim_mode: false,
+        font_size: null,
+        tab_size: 2,
+        line_numbers: true
+      };
     }
 
     const prefsFromDB = { ...result };
-    if (prefsFromDB) {
-      if (prefsFromDB.language && prefsFromDB.language in languages) {
-        setLangKey(prefsFromDB.language as keyof typeof languages);
-      }
-      if (prefsFromDB.vim_mode !== null) {
-        setIsVim(prefsFromDB.vim_mode);
-      }
-      if (prefsFromDB.tab_size !== null) {
-        setTabSizeValue(prefsFromDB.tab_size);
-      }
-      if (prefsFromDB.font_size !== null) {
-        setFontSize(prefsFromDB.font_size);
-      }
-      if (prefsFromDB.line_numbers !== null) {
-        setIsLineNumbers(prefsFromDB.line_numbers);
-      }
-
-      const { error: localStorageError } = await tryCatch(
-        Promise.resolve(
-          localStorage.setItem(
-            "userPreferences",
-            JSON.stringify({
-              language: prefsFromDB.language,
-              vim_mode: prefsFromDB.vim_mode,
-              font_size: prefsFromDB.font_size,
-              tab_size: prefsFromDB.tab_size,
-              line_numbers: prefsFromDB.line_numbers
-            })
-          )
-        )
-      );
-      if (localStorageError) {
-      }
+    if (prefsFromDB.language && prefsFromDB.language in languages) {
+      setLangKey(prefsFromDB.language as keyof typeof languages);
     }
+    if (prefsFromDB.vim_mode !== null) {
+      setIsVim(prefsFromDB.vim_mode);
+    }
+    if (prefsFromDB.tab_size !== null) {
+      setTabSizeValue(prefsFromDB.tab_size);
+    }
+    if (prefsFromDB.font_size !== null) {
+      setFontSize(prefsFromDB.font_size);
+    }
+    if (prefsFromDB.line_numbers !== null) {
+      setIsLineNumbers(prefsFromDB.line_numbers);
+    }
+
+    const { error: localStorageError } = await tryCatch(
+      Promise.resolve(
+        localStorage.setItem(
+          "userPreferences",
+          JSON.stringify({
+            language: prefsFromDB.language,
+            vim_mode: prefsFromDB.vim_mode,
+            font_size: prefsFromDB.font_size,
+            tab_size: prefsFromDB.tab_size,
+            line_numbers: prefsFromDB.line_numbers
+          })
+        )
+      )
+    );
+    if (localStorageError) {
+      setMessage({
+        type: "error",
+        text: `Failed to save preferences locally, try again: ${localStorageError.message}`
+      });
+    }
+
+    // Return DB preferences, or default if missing
     return {
-      ...prefsFromDB
+      language:
+        "language" in prefsFromDB &&
+        prefsFromDB.language &&
+        prefsFromDB.language in languages
+          ? prefsFromDB.language
+          : "cpp",
+      vim_mode:
+        "vim_mode" in prefsFromDB && prefsFromDB.vim_mode
+          ? prefsFromDB.vim_mode
+          : false,
+      font_size:
+        "font_size" in prefsFromDB && prefsFromDB.font_size
+          ? prefsFromDB.font_size
+          : null,
+      tab_size:
+        "tab_size" in prefsFromDB && prefsFromDB.tab_size
+          ? prefsFromDB.tab_size
+          : 2,
+      line_numbers:
+        "line_numbers" in prefsFromDB && prefsFromDB.line_numbers
+          ? prefsFromDB.line_numbers
+          : true
     };
   }
 

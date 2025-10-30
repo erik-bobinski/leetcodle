@@ -5,7 +5,7 @@ import { languages } from "@/types/editor-languages";
 import parseUserCodeForSubmission from "@/lib/code-parsers";
 import { getTestArgs } from "./get-test-args";
 import { getTestCases } from "./get-test-cases";
-import { gradeSolutionOutput } from "@/lib/ai-tooling";
+import { gradeSolutionOutput } from "@/lib/ai-tooling-old";
 
 /**
  * Grades solution comparing output to expected output

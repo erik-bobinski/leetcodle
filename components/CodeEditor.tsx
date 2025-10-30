@@ -1,5 +1,3 @@
-"use client";
-
 import { createTheme } from "thememirror";
 import { tags as t } from "@lezer/highlight";
 import { EditorState } from "@codemirror/state";
@@ -48,7 +46,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 import { gradeUserCode } from "@/app/actions/grade-solution";
-import type { GetProblem } from "@/types/database";
+import type { GetProblem, UserSubmissionCode } from "@/types/database";
 
 const leetcodleTheme = createTheme({
   variant: "dark",
@@ -84,13 +82,14 @@ export default function CodeEditor({
   prerequisiteDataStructure,
   problemTitle,
   problemDescription,
-  onResult
+  onSubmissionResult,
+  latestCode
 }: {
   template: GetProblem["template"];
   prerequisiteDataStructure: GetProblem["prerequisite_data_structure"];
   problemTitle: GetProblem["title"];
   problemDescription: GetProblem["description"];
-  onResult?: (result: {
+  onSubmissionResult?: (result: {
     graded: boolean;
     hint: string | null;
     isCorrect: boolean[];
@@ -99,8 +98,11 @@ export default function CodeEditor({
     error?: string | null;
     stdout?: string | null;
   }) => void;
+  latestCode?: UserSubmissionCode | null;
 }) {
-  const [langKey, setLangKey] = useState<keyof typeof languages>("cpp");
+  const [langKey, setLangKey] = useState<keyof typeof languages>(
+    latestCode?.language || "cpp"
+  );
 
   const processBoilerplate = useCallback(
     (
@@ -186,11 +188,12 @@ export default function CodeEditor({
   const [tabSizeValue, setTabSizeValue] = useState(2);
 
   const [code, setCode] = useState(
-    processBoilerplate(
-      languages[langKey].boilerplate,
-      tabSizeValue,
-      template ?? undefined
-    )
+    latestCode?.code ||
+      processBoilerplate(
+        languages[langKey].boilerplate,
+        tabSizeValue,
+        template ?? undefined
+      )
   );
   const [tabSize, setTabSize] = useState(indentUnit.of("  "));
   const [fontSize, setFontSize] = useState<number | null>(null);
@@ -209,103 +212,117 @@ export default function CodeEditor({
       );
       alert(`Failed to access local storage: ${getItemError.message}`);
     }
-
     if (localPrefs !== null) {
       const { data: parsedPrefs, error: jsonParseError } = await tryCatch(
         Promise.resolve(JSON.parse(localPrefs))
       );
-      if (jsonParseError) {
+      if (!jsonParseError && parsedPrefs) {
+        // Successfully parsed, set state and return
+        if ("language" in parsedPrefs && parsedPrefs.language in languages) {
+          setLangKey(parsedPrefs.language);
+        }
+        if ("vim_mode" in parsedPrefs && parsedPrefs.vim_mode !== null) {
+          setIsVim(parsedPrefs.vim_mode);
+        }
+        if ("tab_size" in parsedPrefs && parsedPrefs.tab_size !== null) {
+          setTabSizeValue(parsedPrefs.tab_size);
+          setTabSize(indentUnit.of(" ".repeat(parsedPrefs.tab_size)));
+        }
+        if ("font_size" in parsedPrefs && parsedPrefs.font_size !== null) {
+          setFontSize(parsedPrefs.font_size);
+        }
+        if (
+          "line_numbers" in parsedPrefs &&
+          parsedPrefs.line_numbers !== null
+        ) {
+          setIsLineNumbers(parsedPrefs.line_numbers);
+        }
+        return {
+          ...parsedPrefs
+        };
+      } else if (jsonParseError) {
         console.error("Failed to parse local userPreferences:", jsonParseError);
         alert(`Failed to parse saved preferences: ${jsonParseError.message}`);
-        return;
+        // Fall through to DB fetch
       }
-
-      // safely update react state
-      if ("language" in parsedPrefs && parsedPrefs.language in languages) {
-        setLangKey(parsedPrefs.language);
-      }
-      if ("vim_mode" in parsedPrefs && parsedPrefs.vim_mode !== null) {
-        setIsVim(parsedPrefs.vim_mode);
-      }
-      if ("tab_size" in parsedPrefs && parsedPrefs.tab_size !== null) {
-        setTabSizeValue(parsedPrefs.tab_size);
-        setTabSize(indentUnit.of(" ".repeat(parsedPrefs.tab_size)));
-      }
-      if ("font_size" in parsedPrefs && parsedPrefs.font_size !== null) {
-        setFontSize(parsedPrefs.font_size);
-      }
-      if ("line_numbers" in parsedPrefs && parsedPrefs.line_numbers !== null) {
-        setIsLineNumbers(parsedPrefs.line_numbers);
-      }
-      return {
-        ...parsedPrefs
-      };
     }
 
     // 2. resort to DB fetch
     const result = await getUser();
     if (result === null) {
-      console.error("No current user was found");
-      alert("No current user was found. Please sign in again.");
-      return;
+      // Return default preferences
+      return {
+        language: "cpp",
+        vim_mode: false,
+        font_size: null,
+        tab_size: 2,
+        line_numbers: true
+      };
     }
     if ("error" in result) {
       console.error("Failed to get preferences from database:", result.error);
       alert(`Failed to load preferences from server: ${result.error}`);
-      return;
+      // Return default preferences
+      return {
+        language: "cpp",
+        vim_mode: false,
+        font_size: null,
+        tab_size: 2,
+        line_numbers: true
+      };
     }
 
     const prefsFromDB = { ...result };
-    if (prefsFromDB) {
-      if (prefsFromDB.language && prefsFromDB.language in languages) {
-        setLangKey(prefsFromDB.language as keyof typeof languages);
-      }
-      if (prefsFromDB.vim_mode !== null) {
-        setIsVim(prefsFromDB.vim_mode);
-      }
-      if (prefsFromDB.tab_size !== null) {
-        setTabSizeValue(prefsFromDB.tab_size);
-        setTabSize(indentUnit.of(" ".repeat(prefsFromDB.tab_size)));
-      }
-      if (prefsFromDB.font_size !== null) {
-        setFontSize(prefsFromDB.font_size);
-      }
-      if (prefsFromDB.line_numbers !== null) {
-        setIsLineNumbers(prefsFromDB.line_numbers);
-      }
-
-      const { error: localStorageError } = await tryCatch(
-        Promise.resolve(
-          localStorage.setItem(
-            "userPreferences",
-            JSON.stringify({
-              language: prefsFromDB.language,
-              vim_mode: prefsFromDB.vim_mode,
-              font_size: prefsFromDB.font_size,
-              tab_size: prefsFromDB.tab_size,
-              line_numbers: prefsFromDB.line_numbers
-            })
-          )
-        )
-      );
-      if (localStorageError) {
-        console.error("Error saving to localStorage:", localStorageError);
-        alert(
-          `Failed to save preferences locally: ${localStorageError.message}`
-        );
-      }
+    if (
+      "language" in prefsFromDB &&
+      prefsFromDB.language !== null &&
+      prefsFromDB.language in languages
+    ) {
+      setLangKey(prefsFromDB.language as keyof typeof languages);
     }
-    return {
-      ...prefsFromDB
-    };
+    if ("vim_mode" in prefsFromDB && prefsFromDB.vim_mode !== null) {
+      setIsVim(prefsFromDB.vim_mode);
+    }
+    if ("tab_size" in prefsFromDB && prefsFromDB.tab_size !== null) {
+      setTabSizeValue(prefsFromDB.tab_size);
+      setTabSize(indentUnit.of(" ".repeat(prefsFromDB.tab_size)));
+    }
+    if ("font_size" in prefsFromDB && prefsFromDB.font_size !== null) {
+      setFontSize(prefsFromDB.font_size);
+    }
+    if ("line_numbers" in prefsFromDB && prefsFromDB.line_numbers !== null) {
+      setIsLineNumbers(prefsFromDB.line_numbers);
+    }
 
-    // 3. Last resort, use default preferences
+    const { error: localStorageError } = await tryCatch(
+      Promise.resolve(
+        localStorage.setItem(
+          "userPreferences",
+          JSON.stringify({
+            language: prefsFromDB.language,
+            vim_mode: prefsFromDB.vim_mode,
+            font_size: prefsFromDB.font_size,
+            tab_size: prefsFromDB.tab_size,
+            line_numbers: prefsFromDB.line_numbers
+          })
+        )
+      )
+    );
+    if (localStorageError) {
+      console.error("Error saving to localStorage:", localStorageError);
+      alert(`Failed to save preferences locally: ${localStorageError.message}`);
+    }
+
+    // Return DB preferences, or default if missing
     return {
-      language: "cpp",
-      vim_mode: false,
-      font_size: null,
-      tab_size: 2,
-      line_numbers: true
+      language:
+        prefsFromDB.language && prefsFromDB.language in languages
+          ? prefsFromDB.language
+          : "cpp",
+      vim_mode: prefsFromDB.vim_mode ?? false,
+      font_size: prefsFromDB.font_size ?? null,
+      tab_size: prefsFromDB.tab_size ?? 2,
+      line_numbers: prefsFromDB.line_numbers ?? true
     };
   }
 
@@ -395,8 +412,8 @@ export default function CodeEditor({
         problemTitle,
         problemDescription
       );
-      if (onResult) {
-        onResult(
+      if (onSubmissionResult) {
+        onSubmissionResult(
           result as {
             graded: boolean;
             hint: string | null;
