@@ -13,6 +13,18 @@ import { SignInButton, UserButton, useClerk, useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import HelpModal from "@/components/HelpModal";
 
+// Shimmer placeholder component
+function ShimmerCircle() {
+  return (
+    <div
+      className="relative h-9 w-9 animate-pulse overflow-hidden rounded-full bg-gray-300 dark:bg-gray-700"
+      aria-hidden="true"
+    >
+      <div className="animate-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-gray-600/60" />
+    </div>
+  );
+}
+
 export default function Navigation() {
   const { session } = useClerk();
   const { isLoaded, isSignedIn } = useAuth();
@@ -27,18 +39,6 @@ export default function Navigation() {
       }
     }
   }, [session]);
-
-  // Shimmer placeholder component
-  function ShimmerCircle() {
-    return (
-      <div
-        className="relative h-9 w-9 animate-pulse overflow-hidden rounded-full bg-gray-300 dark:bg-gray-700"
-        aria-hidden="true"
-      >
-        <div className="animate-shimmer absolute inset-0 bg-gradient-to-r from-transparent via-gray-200/60 to-transparent dark:via-gray-600/60" />
-      </div>
-    );
-  }
 
   return (
     <header className="">
