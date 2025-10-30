@@ -1,0 +1,1 @@
+ALTER TABLE "template_args" DROP COLUMN "test_args";

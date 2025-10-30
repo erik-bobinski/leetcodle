@@ -24,7 +24,8 @@ export default function SignInPage() {
       const response = await fetch("/api/auth/validate-user", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`
         },
         body: JSON.stringify({ email })
       });

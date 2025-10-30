@@ -1,8 +1,10 @@
 import { WebhookEvent } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { Webhook } from "svix";
-import { createServiceRoleClient } from "@/lib/supabase";
-import type { User } from "@/lib/supabase";
+import { db } from "@/drizzle";
+import { eq } from "drizzle-orm";
+import { UsersTable } from "@/drizzle/schema";
+import { tryCatch } from "@/lib/try-catch";
 
 export async function POST(req: Request) {
   // Get the headers
@@ -50,25 +52,23 @@ export async function POST(req: Request) {
 
   console.log(`🎯 Processing webhook event: ${eventType}`);
 
-  const supabase = createServiceRoleClient();
-
   if (eventType === "user.created") {
     const { id, email_addresses, username } = payload.data;
-
-    const { error } = await supabase.from("users").insert({
-      user_id: id,
-      email: email_addresses[0]?.email_address,
-      username,
-      theme: null,
-      font_size: 14,
-      tab_size: 2,
-      line_numbers: true,
-      vim_mode: false,
-      language: "cpp"
-    } as User);
-
-    if (error) {
-      console.error("Error inserting user into Supabase:", error);
+    const { error: insertError } = await tryCatch(
+      db.insert(UsersTable).values({
+        user_id: id,
+        email: email_addresses[0]?.email_address,
+        username,
+        theme: null,
+        font_size: 14,
+        tab_size: 2,
+        line_numbers: true,
+        vim_mode: false,
+        language: "cpp"
+      })
+    );
+    if (insertError) {
+      console.error("Error inserting user via Drizzle:", insertError);
       return new Response("Failed to insert user", { status: 500 });
     }
 
@@ -86,32 +86,35 @@ export async function POST(req: Request) {
       language
     } = payload.data;
 
-    const { error } = await supabase
-      .from("users")
-      .update({
-        email: email_addresses?.[0]?.email_address,
-        username,
-        theme,
-        font_size,
-        tab_size,
-        line_numbers,
-        vim_mode,
-        language
-      })
-      .eq("user_id", id);
-
-    if (error) {
-      console.error("Error updating user in Supabase:", error);
+    const { error: updateError } = await tryCatch(
+      db
+        .update(UsersTable)
+        .set({
+          email: email_addresses?.[0]?.email_address,
+          username,
+          theme,
+          font_size,
+          tab_size,
+          line_numbers,
+          vim_mode,
+          language
+        })
+        .where(eq(UsersTable.user_id, id))
+    );
+    if (updateError) {
+      console.error("Error updating user via Drizzle:", updateError);
       return new Response("Failed to update user", { status: 500 });
     }
 
     return new Response("User updated", { status: 200 });
   } else if (eventType === "user.deleted") {
     const { id } = payload.data;
-    const { error } = await supabase.from("users").delete().eq("user_id", id);
-    if (error) {
-      console.error("Error deleting user from Supabase: ", error);
-      return new Response("Error deleting user from Supabase", { status: 500 });
+    const { error: deleteError } = await tryCatch(
+      db.delete(UsersTable).where(eq(UsersTable.user_id, id))
+    );
+    if (deleteError) {
+      console.error("Error deleting user via Drizzle:", deleteError);
+      return new Response("Error deleting user", { status: 500 });
     }
     return new Response("User deleted", { status: 200 });
   }

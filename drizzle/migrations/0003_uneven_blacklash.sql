@@ -1,0 +1,1 @@
+ALTER TABLE "template_args" ALTER COLUMN "test_args" SET NOT NULL;

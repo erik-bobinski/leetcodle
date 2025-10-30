@@ -1,3 +1,5 @@
+import ReactMarkdown from "react-markdown";
+
 export default function ExampleBox({
   input,
   output
@@ -14,11 +16,15 @@ export default function ExampleBox({
       >
         <div>
           <span className="font-semibold text-green-400">Input:</span>
-          <span className="ml-2 text-green-200">{input}</span>
+          <span className="ml-2 text-green-200">
+            <ReactMarkdown>{input}</ReactMarkdown>
+          </span>
         </div>
         <div className="mt-4">
           <span className="font-semibold text-cyan-400">Output:</span>
-          <span className="ml-2 text-green-200">{output}</span>
+          <span className="ml-2 text-green-200">
+            <ReactMarkdown>{output}</ReactMarkdown>
+          </span>
         </div>
       </div>
     </div>

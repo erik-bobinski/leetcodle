@@ -20,16 +20,24 @@ export function ModeToggle() {
     setMounted(true);
   }, []);
 
+  if (!mounted) {
+    return (
+      <Button variant="outline" size="icon" className="hover:cursor-pointer">
+        <Sun className="h-[1.2rem] w-[1.2rem]" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    );
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon" className="hover:cursor-pointer">
-          {mounted &&
-            (resolvedTheme === "dark" ? (
-              <Moon className="h-[1.2rem] w-[1.2rem]" />
-            ) : (
-              <Sun className="h-[1.2rem] w-[1.2rem]" />
-            ))}
+          {resolvedTheme === "dark" ? (
+            <Moon className="h-[1.2rem] w-[1.2rem]" />
+          ) : (
+            <Sun className="h-[1.2rem] w-[1.2rem]" />
+          )}
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>

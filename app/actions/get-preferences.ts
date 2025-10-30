@@ -1,39 +1,45 @@
 "use server";
 
-import { supabase } from "@/lib/supabase";
-import type { User } from "@/lib/supabase";
+import { tryCatch } from "@/lib/try-catch";
 import { auth } from "@clerk/nextjs/server";
+import { db } from "@/drizzle";
+import { UsersTable } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 
-export async function getUser(): Promise<User | null> {
-  try {
-    const { userId } = await auth();
+export async function getUser() {
+  const { data: authData, error: authError } = await tryCatch(auth());
+  if (authError) {
+    return { error: `Error getting userId from clerk: ${authError.message}` };
+  }
 
-    if (!userId) {
-      console.error("No authenticated user found");
-      return null;
-    }
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
-
-    if (error) {
-      if (
-        error?.code === "PGRST116" &&
-        error?.details === "The result contains 0 rows"
-      ) {
-        console.error("No user data found in database");
-      } else {
-        console.error("Database error:", error);
-      }
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error("Error in getUser:", error);
+  const userId = authData.userId;
+  if (userId === null) {
     return null;
   }
+
+  const { data: userData, error: dbError } = await tryCatch(
+    db.select().from(UsersTable).where(eq(UsersTable.user_id, userId)).limit(1)
+  );
+  if (dbError) {
+    return {
+      error: `Error querying user from database: ${dbError.message}`
+    };
+  }
+
+  // Check if user exists
+  if (!userData || userData.length === 0) {
+    return null;
+  }
+
+  // Return the first (and only) user record, excluding sensitive fields
+  const user = userData[0];
+  return {
+    theme: user.theme,
+    font_size: user.font_size,
+    tab_size: user.tab_size,
+    line_numbers: user.line_numbers,
+    vim_mode: user.vim_mode,
+    language: user.language,
+    username: user.username
+  } as Omit<typeof user, "created_at" | "updated_at" | "user_id" | "email">;
 }

@@ -27,6 +27,12 @@ const POLL_INTERVAL = 500; // ms
 
 // submit program for RCE to Judge0
 export async function POST(request: NextRequest) {
+  // Security check
+  const authHeader = request.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.API_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const headers = getHeaders();
     const { source_code, language_id } = await request.json();

@@ -1,36 +1,86 @@
-import CodeEditor from "@/components/CodeEditor";
-import Wordle from "@/components/Wordle";
-import { getTodaysProblem } from "./actions/get-problem";
+import { getProblem } from "./actions/get-problem";
 import ProblemDetails from "@/components/ProblemDetails";
-import CodeOutput from "@/components/CodeOutput";
 import { connection } from "next/server";
+import Playground from "@/components/Playground";
+import { Wordle } from "@/components/Wordle";
+import { getUserSubmission } from "./actions/get-user-submission";
 
-export default async function Home() {
+export default async function Home({
+  searchParams
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
   await connection();
-  const problem = await getTodaysProblem();
-  const template = problem?.template ?? null;
+  const params = await searchParams;
+  const getProblemResult = await getProblem(params.date);
+
+  if ("error" in getProblemResult) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="mb-4 text-xl font-bold text-red-600">
+            Error Loading Problem
+          </h1>
+          <p className="mb-2 text-lg text-gray-700">{getProblemResult.error}</p>
+          <p className="text-sm text-gray-500">
+            Please try refreshing the page or reach out to{" "}
+            <a
+              href="https://twitter.com/erikbobinski"
+              className="text-blue-500 hover:underline"
+            >
+              twitter.com/erikbobinski
+            </a>{" "}
+            if the issue persists!
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const problem = getProblemResult;
+  const template = problem.template;
   const prerequisite_data_structure =
-    problem?.prerequisite_data_structure ?? null;
+    problem.prerequisite_data_structure ?? null;
+
+  const userSubmissionResult = await getUserSubmission(params.date);
+  if (userSubmissionResult !== null && "error" in userSubmissionResult) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="mb-4 text-xl font-bold text-red-600">
+            Error Loading Problem
+          </h1>
+          <p className="mb-2 text-lg text-gray-700">
+            {userSubmissionResult.error}
+          </p>
+          <p className="text-sm text-gray-500">
+            Please try refreshing the page or reach out to{" "}
+            <a
+              href="https://twitter.com/erikbobinski"
+              className="text-blue-500 hover:underline"
+            >
+              twitter.com/erikbobinski
+            </a>{" "}
+            if the issue persists!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
       {/* Problem Title and Description */}
       <ProblemDetails problem={problem} />
 
-      <main className="flex flex-col md:flex-row">
-        <div className="w-0.9 mx-6 md:w-2/3">
-          <CodeEditor
-            template={template}
-            prerequisiteDataStructure={prerequisite_data_structure}
-          />
-        </div>
-
-        <div className="mr-4 flex flex-col items-center">
-          <Wordle />
-          {/* Output Box */}
-          <CodeOutput />
-        </div>
-      </main>
+      <Playground
+        latestCode={userSubmissionResult?.userSubmissionCode}
+        template={template}
+        prerequisiteDataStructure={prerequisite_data_structure}
+        problemTitle={problem?.title}
+        problemDescription={problem?.description}
+      />
+      <Wordle attempts={userSubmissionResult?.userSubmissionAttempts ?? []} />
     </>
   );
 }

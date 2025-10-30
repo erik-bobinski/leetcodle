@@ -28,14 +28,29 @@ ${sourceCode}
 
 if __name__ == "__main__":
 {{indent}}solution = Solution()
-{{indent}}print(solution.${functionName}(${testArgs}))`);
+{{indent}}print(
+{{indent}}{{indent}}solution.${functionName}(${testArgs[0]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[1]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[2]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[3]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[4]}),
+{{indent}}{{indent}}sep=", "
+{{indent}})
+`);
 
     case "cpp":
-      return replaceIndent(`${sourceCode}
+      return replaceIndent(`#include <iostream>
+
+${sourceCode}
 
 int main() {
 {{indent}}Solution solution;
-{{indent}}std::cout << solution.${functionName}(${testArgs}) << std::endl;
+{{indent}}std::cout << solution.${functionName}(${testArgs[0]})
+{{indent}}          << ", " << solution.${functionName}(${testArgs[1]})
+{{indent}}          << ", " << solution.${functionName}(${testArgs[2]})
+{{indent}}          << ", " << solution.${functionName}(${testArgs[3]})
+{{indent}}          << ", " << solution.${functionName}(${testArgs[4]})
+{{indent}}          << std::endl;
 {{indent}}return 0;
 }`);
 
@@ -44,7 +59,13 @@ int main() {
 
 func main() {
 {{indent}}solution := Solution{}
-{{indent}}fmt.Println(solution.${functionName}(${testArgs}))
+{{indent}}fmt.Printf("%v, %v, %v, %v, %v\n",
+{{indent}}{{indent}}solution.${functionName}(${testArgs[0]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[1]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[2]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[3]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[4]})
+{{indent}})
 }`);
 
     case "java":
@@ -52,25 +73,38 @@ func main() {
 
 public static void main(String[] args) {
 {{indent}}Solution solution = new Solution();
-{{indent}}System.out.println(solution.${functionName}(${testArgs}));
+{{indent}}System.out.println(
+{{indent}}{{indent}}solution.${functionName}(${testArgs[0]}) + ", " +
+{{indent}}{{indent}}solution.${functionName}(${testArgs[1]}) + ", " +
+{{indent}}{{indent}}solution.${functionName}(${testArgs[2]}) + ", " +
+{{indent}}{{indent}}solution.${functionName}(${testArgs[3]}) + ", " +
+{{indent}}{{indent}}solution.${functionName}(${testArgs[4]})
+{{indent}});
 }`);
 
     case "javascript":
       return replaceIndent(`${sourceCode}
 
-console.log(${functionName}(${testArgs}));`);
+console.log([${functionName}(${testArgs[0]}), ${functionName}(${testArgs[1]}), ${functionName}(${testArgs[2]}), ${functionName}(${testArgs[3]}), ${functionName}(${testArgs[4]})].join(", "));`);
 
     case "typescript":
       return replaceIndent(`${sourceCode}
 
-console.log(${functionName}(${testArgs}));`);
+console.log([${functionName}(${testArgs[0]}), ${functionName}(${testArgs[1]}), ${functionName}(${testArgs[2]}), ${functionName}(${testArgs[3]}), ${functionName}(${testArgs[4]})].join(", "));`);
 
     case "rust":
       return replaceIndent(`${sourceCode}
 
 fn main() {
 {{indent}}let solution = Solution;
-{{indent}}println!("{:?}", solution.${functionName}(${testArgs}));
+{{indent}}println!(
+{{indent}}{{indent}}"{:?}, {:?}, {:?}, {:?}, {:?}",
+{{indent}}{{indent}}solution.${functionName}(${testArgs[0]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[1]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[2]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[3]}),
+{{indent}}{{indent}}solution.${functionName}(${testArgs[4]})
+{{indent}});
 }`);
 
     default:

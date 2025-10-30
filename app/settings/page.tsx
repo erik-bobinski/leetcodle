@@ -8,11 +8,12 @@ import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { languages } from "@/types/editor-languages";
 import { useQuery } from "@tanstack/react-query";
+import { tryCatch } from "@/lib/try-catch";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 
@@ -30,52 +31,89 @@ export default function SettingsPage() {
 
   async function fetchPreferences() {
     // 1. check for prefs in local storage
-    const localPrefs = localStorage.getItem("userPreferences");
+    const { data: localPrefs, error: getItemError } = await tryCatch(
+      Promise.resolve(localStorage.getItem("userPreferences"))
+    );
+    if (getItemError) {
+      setMessage({ type: "error", text: `${getItemError.message}` });
+    }
+
     if (localPrefs !== null) {
-      try {
-        const parsedPrefs = JSON.parse(localPrefs);
-        if (parsedPrefs.language && parsedPrefs.language in languages) {
-          setLangKey(parsedPrefs.language);
-        }
-        if (parsedPrefs.vim_mode !== null) {
-          setIsVim(parsedPrefs.vim_mode);
-        }
-        if (parsedPrefs.tab_size !== null) {
-          setTabSizeValue(parsedPrefs.tab_size);
-        }
-        if (parsedPrefs.font_size !== null) {
-          setFontSize(parsedPrefs.font_size);
-        }
-        if (parsedPrefs.line_numbers !== null) {
-          setIsLineNumbers(parsedPrefs.line_numbers);
-        }
-        return {
-          ...parsedPrefs
-        };
-      } catch (e) {
-        console.error("Failed to parse local userPrefernces: ", e);
+      const { data: parsedPrefs, error: jsonParseError } = await tryCatch(
+        Promise.resolve(JSON.parse(localPrefs))
+      );
+      if (jsonParseError) {
+        setMessage({ type: "error", text: `${jsonParseError}` });
       }
+
+      // safely update react state
+      if ("language" in parsedPrefs && parsedPrefs.language in languages) {
+        setLangKey(parsedPrefs.language);
+      }
+      if ("vim_mode" in parsedPrefs && parsedPrefs.vim_mode !== null) {
+        setIsVim(parsedPrefs.vim_mode);
+      }
+      if ("tab_size" in parsedPrefs && parsedPrefs.tab_size !== null) {
+        setTabSizeValue(parsedPrefs.tab_size);
+      }
+      if ("font_size" in parsedPrefs && parsedPrefs.font_size !== null) {
+        setFontSize(parsedPrefs.font_size);
+      }
+      if ("line_numbers" in parsedPrefs && parsedPrefs.line_numbers !== null) {
+        setIsLineNumbers(parsedPrefs.line_numbers);
+      }
+      return {
+        ...parsedPrefs
+      };
     }
 
     // 2. resort to DB fetch
-    try {
-      const prefsFromDB = await getUser();
-      if (prefsFromDB) {
-        if (prefsFromDB.language && prefsFromDB.language in languages) {
-          setLangKey(prefsFromDB.language as keyof typeof languages);
-        }
-        if (prefsFromDB.vim_mode !== null) {
-          setIsVim(prefsFromDB.vim_mode);
-        }
-        if (prefsFromDB.tab_size !== null) {
-          setTabSizeValue(prefsFromDB.tab_size);
-        }
-        if (prefsFromDB.font_size !== null) {
-          setFontSize(prefsFromDB.font_size);
-        }
-        if (prefsFromDB.line_numbers !== null) {
-          setIsLineNumbers(prefsFromDB.line_numbers);
-        }
+    const result = await getUser();
+    if (result === null) {
+      setMessage({
+        type: "error",
+        text: "No current user was found, this shouldn't be possible since settings route is auth protected"
+      });
+      // Return default preferences
+      return {
+        language: "cpp",
+        vim_mode: false,
+        font_size: null,
+        tab_size: 2,
+        line_numbers: true
+      };
+    }
+    if ("error" in result) {
+      setMessage({ type: "error", text: `${result.error}` });
+      // Return default preferences
+      return {
+        language: "cpp",
+        vim_mode: false,
+        font_size: null,
+        tab_size: 2,
+        line_numbers: true
+      };
+    }
+
+    const prefsFromDB = { ...result };
+    if (prefsFromDB.language && prefsFromDB.language in languages) {
+      setLangKey(prefsFromDB.language as keyof typeof languages);
+    }
+    if (prefsFromDB.vim_mode !== null) {
+      setIsVim(prefsFromDB.vim_mode);
+    }
+    if (prefsFromDB.tab_size !== null) {
+      setTabSizeValue(prefsFromDB.tab_size);
+    }
+    if (prefsFromDB.font_size !== null) {
+      setFontSize(prefsFromDB.font_size);
+    }
+    if (prefsFromDB.line_numbers !== null) {
+      setIsLineNumbers(prefsFromDB.line_numbers);
+    }
+
+    const { error: localStorageError } = await tryCatch(
+      Promise.resolve(
         localStorage.setItem(
           "userPreferences",
           JSON.stringify({
@@ -85,14 +123,41 @@ export default function SettingsPage() {
             tab_size: prefsFromDB.tab_size,
             line_numbers: prefsFromDB.line_numbers
           })
-        );
-      }
-      return {
-        ...prefsFromDB
-      };
-    } catch (e) {
-      console.error("Failed to get preferences from database: ", e);
+        )
+      )
+    );
+    if (localStorageError) {
+      setMessage({
+        type: "error",
+        text: `Failed to save preferences locally, try again: ${localStorageError.message}`
+      });
     }
+
+    // Return DB preferences, or default if missing
+    return {
+      language:
+        "language" in prefsFromDB &&
+        prefsFromDB.language &&
+        prefsFromDB.language in languages
+          ? prefsFromDB.language
+          : "cpp",
+      vim_mode:
+        "vim_mode" in prefsFromDB && prefsFromDB.vim_mode
+          ? prefsFromDB.vim_mode
+          : false,
+      font_size:
+        "font_size" in prefsFromDB && prefsFromDB.font_size
+          ? prefsFromDB.font_size
+          : null,
+      tab_size:
+        "tab_size" in prefsFromDB && prefsFromDB.tab_size
+          ? prefsFromDB.tab_size
+          : 2,
+      line_numbers:
+        "line_numbers" in prefsFromDB && prefsFromDB.line_numbers
+          ? prefsFromDB.line_numbers
+          : true
+    };
   }
 
   const { isLoading, error } = useQuery({
@@ -109,37 +174,48 @@ export default function SettingsPage() {
   }
 
   async function handleSubmit(formData: FormData) {
-    try {
-      setSaving(true);
-      setMessage(null);
-      const newPreferences = await updatePreferences(formData);
-      localStorage.setItem(
-        "userPreferences",
-        JSON.stringify({
-          language: newPreferences.language,
-          vim_mode: newPreferences.vim_mode,
-          font_size: newPreferences.font_size,
-          tab_size: newPreferences.tab_size,
-          line_numbers: newPreferences.line_numbers
-        })
-      );
-      setMessage({ type: "success", text: "Preferences saved successfully!" });
-    } catch (error) {
-      console.error("Error saving preferences:", error);
+    setSaving(true);
+    setMessage(null);
+
+    const result = await updatePreferences(formData);
+    if ("error" in result) {
+      setMessage({ type: "error", text: result.error });
+      setSaving(false);
+      return;
+    }
+
+    const { error: localStorageError } = await tryCatch(
+      Promise.resolve(
+        localStorage.setItem(
+          "userPreferences",
+          JSON.stringify({
+            ...result
+          })
+        )
+      )
+    );
+    if (localStorageError) {
+      console.error("Error saving to localStorage:", localStorageError);
       if (
-        error instanceof DOMException &&
-        error.name === "QuotaExceededError"
+        localStorageError instanceof DOMException &&
+        localStorageError.name === "QuotaExceededError"
       ) {
         setMessage({
           type: "error",
           text: "Failed to save preferences in your browser, storage may be disabled for this site in your settings"
         });
       } else {
-        setMessage({ type: "error", text: "Sign in to save preferences ;)" });
+        setMessage({
+          type: "error",
+          text: `Failed to save preferences locally, ${localStorageError.message}`
+        });
       }
-    } finally {
       setSaving(false);
+      return;
     }
+
+    setMessage({ type: "success", text: "Preferences saved successfully!" });
+    setSaving(false);
   }
 
   if (isLoading) {
@@ -274,7 +350,8 @@ export default function SettingsPage() {
                 className="w-56 justify-between"
                 type="button"
               >
-                {languages[langKey ?? "cpp"]?.name} ({languages[langKey ?? "cpp"]?.version})
+                {languages[langKey ?? "cpp"]?.name} (
+                {languages[langKey ?? "cpp"]?.version})
                 <ChevronDownIcon className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -291,11 +368,7 @@ export default function SettingsPage() {
             </DropdownMenuContent>
           </DropdownMenu>
           {/* Hidden input for form submission */}
-          <input
-            type="hidden"
-            name="language"
-            value={langKey ?? "cpp"}
-          />
+          <input type="hidden" name="language" value={langKey ?? "cpp"} />
         </div>
 
         {/* Vim Mode */}
