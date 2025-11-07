@@ -11,7 +11,8 @@ import {
   ProblemsTable,
   TemplateArgsTable,
   TemplatesTable,
-  TestCasesTable
+  TestCasesTable,
+  ReferenceSolutionsTable
 } from "@/drizzle/schema";
 
 export async function GET(request: Request) {
@@ -250,7 +251,7 @@ export async function GET(request: Request) {
 
       // 5) TestCasesTable (per-language, per-index rows from testInputs/Outputs)
       const numCases = problemDetails.template.testInputs.cpp.length;
-      const testCaseRows = Object.keys(
+      const testCaseValues = Object.keys(
         problemDetails.template.testInputs
       ).flatMap((language) =>
         Array.from({ length: numCases }).map((_, idx) => ({
@@ -268,7 +269,7 @@ export async function GET(request: Request) {
         }))
       );
       const { error: testCasesInsertError } = await tryCatch(
-        tx.insert(TestCasesTable).values(testCaseRows)
+        tx.insert(TestCasesTable).values(testCaseValues)
       );
       if (testCasesInsertError) {
         console.error(
@@ -281,8 +282,16 @@ export async function GET(request: Request) {
       }
 
       // TODO: insert referenceSolution into database somewhere
-
-      return { success: true };
+      const referenceSolutionsValues = Object.entries(referenceSolution).map(
+        (entry) => ({
+          problem_id: problemId,
+          language: entry[0],
+          code: entry[1]
+        })
+      );
+      const { error: referenceSolutionsInsertError } = await tryCatch(
+        tx.insert(ReferenceSolutionsTable).values(referenceSolutionsValues)
+      );
     })
   );
 
