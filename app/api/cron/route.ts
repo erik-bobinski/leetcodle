@@ -281,7 +281,6 @@ export async function GET(request: Request) {
         );
       }
 
-      // TODO: insert referenceSolution into database somewhere
       const referenceSolutionsValues = Object.entries(referenceSolution).map(
         (entry) => ({
           problem_id: problemId,
