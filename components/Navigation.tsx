@@ -13,7 +13,6 @@ import { SignInButton, UserButton, useClerk, useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import HelpModal from "@/components/HelpModal";
 
-// Shimmer placeholder component
 function ShimmerCircle() {
   return (
     <div
@@ -97,7 +96,6 @@ export default function Navigation() {
         </div>
       </div>
 
-      {/* Help Modal */}
       <HelpModal
         isOpen={isHelpModalOpen}
         onClose={() => setIsHelpModalOpen(false)}

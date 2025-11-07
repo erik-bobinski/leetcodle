@@ -11,7 +11,7 @@ import {
 import { tryCatch } from "@/lib/try-catch";
 
 export async function getProblem(date?: string) {
-  const targetDate = date || new Date().toISOString().split("T")[0];
+  const targetDate = date?.trim() || new Date().toISOString().split("T")[0];
 
   const { data: problemDataArray, error: problemError } = await tryCatch(
     db

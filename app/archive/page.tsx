@@ -24,8 +24,30 @@ export default async function Archive() {
     );
   }
 
-  // Fetch archive data server-side
-  const archiveData = await getArchiveData();
+  const archiveResult = await getArchiveData();
+  if (archiveResult instanceof Error) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="mb-4 text-xl font-bold text-red-600">
+            Error Loading Archive
+          </h1>
+          <p className="mb-2 text-lg text-gray-700">{archiveResult.message}</p>
+          <p className="text-sm text-gray-500">
+            Please try refreshing the page or reach out to{" "}
+            <a
+              href="https://twitter.com/erikbobinski"
+              className="text-blue-500 hover:underline"
+            >
+              twitter.com/erikbobinski
+            </a>{" "}
+            if the issue persists!
+          </p>
+        </div>
+      </div>
+    );
+  }
+  const archiveData = archiveResult;
 
   return (
     <div className="flex min-h-screen w-full flex-col p-4">
