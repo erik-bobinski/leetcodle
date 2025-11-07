@@ -132,8 +132,7 @@ export async function generateReferenceSolution(
 
 export async function generatePrerequisiteDataStructure(
   problemTitle: string,
-  problemDescription: string,
-  referenceSolutions: Record<string, string>
+  problemDescription: string
 ) {
   const { data, error } = await tryCatch(
     generateObject({
@@ -141,22 +140,33 @@ export async function generatePrerequisiteDataStructure(
       schema: prerequisiteDataStructureSchema,
       system:
         "You are helping create a daily coding problem in the style of leetcode. You will fill out some parameters of the problem to be stored in a database.",
-      prompt: `Problem Title: ${problemTitle}, Problem Description: ${problemDescription}, Example Solutions: ${referenceSolutions}
+      prompt: `Problem Title: ${problemTitle}
+      Problem Description: ${problemDescription}
 
-      Generate \`prerequisiteDataStructure\`, a definition for a prerequisite data structure that the problem uses:
-        for example in python, a TreeNode class with a self.left, self.right, and self.value if the problem's function has an input or output with a tree,
-        or a ListNode for a Linked List problem. You MUST include this field if the solution's function definition takes it as arguments or returns it.
-        Only generate this field if the user needs to know it for the problem, else omit the field.
+      Generate \`prerequisiteDataStructure\` ONLY IF a custom type is required to understand the inputs or outputs (e.g., \`TreeNode\`, \`ListNode\). If not required, return an empty string for that language.
 
-        For any generated field that depends on the programming language's syntax, ensure it is correct.
+      Strict requirements:
+      - Output must be a SINGLE minimal type definition per language when needed (class/struct/type alias) with only the essential fields (e.g., left, right, val/next, value).
+      - DO NOT write or include any solution code, algorithms, helper methods, or functions unrelated to the type definition.
+      - DO NOT include the problem's function, main method, tests, imports, printing, or comments explaining the solution.
+      - Constructors are allowed only if idiomatic for the language; no other methods.
+      - Use idiomatic field names per language. Prefer \`val\` or \`value\` consistently.
+      - Wrap the entire definition in a single code block for each language.
 
-        Follow those instructions to generate data for these languages: ${Object.keys(
-          languages
-        )
-          .map(
-            (langKey) => languages[langKey].name + languages[langKey].version
-          )
-          .join(", ")}.`
+      Examples of acceptable outputs (Python):
+      \"\"\"
+      class ListNode:
+          def __init__(self, val: int = 0, next: 'ListNode | None' = None):
+              self.val = val
+              self.next = next
+      \"\"\"
+
+      If no prerequisite type is needed, return an empty string.
+
+      Generate results for these languages: ${Object.keys(languages)
+        .map((langKey) => languages[langKey].name + languages[langKey].version)
+        .join(", ")}.`,
+      temperature: 0.3
     })
   );
   if (error) {

@@ -43,6 +43,13 @@
       "when": 1761750735814,
       "tag": "0005_dizzy_marvel_zombies",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1762295107364,
+      "tag": "0006_secret_george_stacy",
+      "breakpoints": true
     }
   ]
 }

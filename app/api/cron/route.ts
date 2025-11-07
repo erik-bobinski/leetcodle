@@ -1,5 +1,5 @@
 import { db } from "@/drizzle";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import {
   generatePrerequisiteDataStructure,
   generateProblemDetails,
@@ -32,10 +32,6 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-  console.log(
-    "✅ Generated problemDetails:",
-    JSON.stringify(problemDetails, null, 2)
-  );
 
   const referenceSolution = await generateReferenceSolution(
     problemDetails.description,
@@ -51,15 +47,10 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-  console.log(
-    "✅ Generated referenceSolution:",
-    JSON.stringify(referenceSolution, null, 2)
-  );
 
   const prerequisiteDataStructure = await generatePrerequisiteDataStructure(
     problemDetails.title,
-    problemDetails.description,
-    referenceSolution
+    problemDetails.description
   );
   if (prerequisiteDataStructure instanceof Error) {
     console.error(
@@ -72,10 +63,6 @@ export async function GET(request: Request) {
       }
     );
   }
-  console.log(
-    "✅ Generated prerequisiteDataStructure:",
-    JSON.stringify(prerequisiteDataStructure, null, 2)
-  );
 
   const { data: mostRecentProblemData, error: mostRecentProblemError } =
     await tryCatch(
@@ -106,163 +93,204 @@ export async function GET(request: Request) {
   activeDate.setDate(activeDate.getDate() + 7);
   const activeDateString = activeDate.toISOString().split("T")[0]; // format as YYYY-MM-DD
 
-  const { data: problemInsertData, error: problemInsertError } = await tryCatch(
+  // Check if a problem already exists for this active_date to prevent duplicates
+  const { data: existingProblem, error: checkError } = await tryCatch(
     db
-      .insert(ProblemsTable)
-      .values({
-        problem_number: mostRecentProblemNumber + 1,
-        title: problemDetails.title,
-        description: problemDetails.description,
-        example_input: problemDetails.example_input,
-        example_output: problemDetails.example_output,
-        active_date: activeDateString
-      })
-      .returning({ id: ProblemsTable.id })
+      .select({ id: ProblemsTable.id })
+      .from(ProblemsTable)
+      .where(eq(ProblemsTable.active_date, activeDateString))
+      .limit(1)
   );
-  if (problemInsertError) {
+  if (checkError) {
     console.error(
-      `There was an error inserting into ProblemsTable: ${problemInsertError.message}`
+      `There was an error checking for existing problem: ${checkError.message}`
     );
     return Response.json(
-      `There was an error inserting into ProblemsTable: ${problemInsertError.message}`,
-      {
-        status: 500
-      }
+      `There was an error checking for existing problem: ${checkError.message}`,
+      { status: 500 }
     );
   }
-  if (!problemInsertData || !problemInsertData[0]) {
-    console.error(
-      "The returned problemId for inserting the problem came back as undefined"
+  if (existingProblem && existingProblem.length > 0) {
+    console.log(
+      `Problem already exists for active_date ${activeDateString}, skipping insertion`
     );
-    return Response.json(
-      "The returned problemId for inserting the problem came back as undefined",
-      {
-        status: 500
-      }
-    );
+    return Response.json({
+      success: true,
+      message: `Problem already exists for active_date ${activeDateString}`
+    });
   }
-  const problemId = problemInsertData[0].id;
 
-  if (prerequisiteDataStructure !== undefined) {
-    const { error: prerequisiteDataStructureInsertError } = await tryCatch(
-      db.insert(PrerequisiteDataStructuresTable).values(
-        Object.entries(prerequisiteDataStructure).map(([langKey, code]) => ({
-          language: langKey,
-          data_structure_code: code,
-          problem_id: problemId
-        }))
-      )
-    );
-    if (prerequisiteDataStructureInsertError) {
-      console.error(
-        `There was an error inserting into PrerequisiteDataStructuresTable: ${prerequisiteDataStructureInsertError.message}`
-      );
-      return Response.json(
-        `There was an error inserting into PrerequisiteDataStructuresTable: ${prerequisiteDataStructureInsertError.message}`,
-        {
-          status: 500
+  // Prepare data for later inserts
+  const prerequisiteEntries =
+    prerequisiteDataStructure !== undefined
+      ? Object.entries(prerequisiteDataStructure).filter(
+          ([, code]) => typeof code === "string" && code.trim().length > 0
+        )
+      : [];
+
+  // Wrap all inserts in a transaction to ensure atomicity
+  // If any insert fails, all changes are rolled back
+  const { error: transactionError } = await tryCatch(
+    db.transaction(async (tx) => {
+      // All inserts occur below, in order. If any fails, the entire transaction rolls back.
+
+      // 1) ProblemsTable
+      const { data: problemInsertData, error: problemInsertError } =
+        await tryCatch(
+          tx
+            .insert(ProblemsTable)
+            .values({
+              problem_number: mostRecentProblemNumber + 1,
+              title: problemDetails.title,
+              description: problemDetails.description,
+              example_input: problemDetails.example_input,
+              example_output: problemDetails.example_output,
+              active_date: activeDateString
+            })
+            .returning({ id: ProblemsTable.id })
+        );
+      if (problemInsertError) {
+        console.error(
+          `There was an error inserting into ProblemsTable: ${problemInsertError.message}`
+        );
+        return Response.json(
+          `There was an error inserting into ProblemsTable: ${problemInsertError.message}`,
+          {
+            status: 500
+          }
+        );
+      }
+      if (!problemInsertData || !problemInsertData[0]) {
+        console.error(
+          "The returned problemId for inserting the problem came back as undefined"
+        );
+        return Response.json(
+          "The returned problemId for inserting the problem came back as undefined",
+          {
+            status: 500
+          }
+        );
+      }
+      const problemId = problemInsertData[0].id;
+
+      // 2) PrerequisiteDataStructuresTable
+      if (prerequisiteEntries.length > 0) {
+        const { error: prerequisiteDataStructureInsertError } = await tryCatch(
+          tx.insert(PrerequisiteDataStructuresTable).values(
+            prerequisiteEntries.map(([langKey, code]) => ({
+              language: langKey,
+              data_structure_code: code,
+              problem_id: problemId
+            }))
+          )
+        );
+        if (prerequisiteDataStructureInsertError) {
+          console.error(
+            `There was an error inserting into PrerequisiteDataStructuresTable: ${prerequisiteDataStructureInsertError.message}`
+          );
+          return Response.json(
+            `There was an error inserting into PrerequisiteDataStructuresTable: ${prerequisiteDataStructureInsertError.message}`,
+            { status: 500 }
+          );
         }
-      );
-    }
-  }
-
-  // TODO: Make inserts into TemplatesTable, TemplateArgsTable
-  const { data: templateInsertData, error: templateInsertError } =
-    await tryCatch(
-      db
-        .insert(TemplatesTable)
-        .values({
-          problem_id: problemId,
-          function_name: problemDetails.template.functionName,
-          arg_names: JSON.stringify(problemDetails.template.argNames),
-          js_doc_string: problemDetails.template.jsDocString
-        })
-        .returning({ id: TemplatesTable.id })
-    );
-  if (templateInsertError) {
-    console.error(
-      `There was an error inserting into TemplatesTable: ${templateInsertError.message}`
-    );
-    return Response.json(
-      `There was an error inserting into TemplatesTable: ${templateInsertError.message}`,
-      {
-        status: 500
       }
-    );
-  }
-  const templateId = templateInsertData[0].id;
 
-  const templateArgsValues = Object.keys(problemDetails.template.typedArgs).map(
-    (language) => ({
-      template_id: templateId,
-      language,
-      typed_args: JSON.stringify(
-        problemDetails.template.typedArgs[
-          language as keyof typeof problemDetails.template.typedArgs
-        ]
-      ),
-      return_type:
-        problemDetails.template.returnType[
-          language as keyof typeof problemDetails.template.returnType
-        ]
+      // 3) TemplatesTable
+      const { data: templateInsertData, error: templateInsertError } =
+        await tryCatch(
+          tx
+            .insert(TemplatesTable)
+            .values({
+              problem_id: problemId,
+              function_name: problemDetails.template.functionName,
+              arg_names: JSON.stringify(problemDetails.template.argNames),
+              js_doc_string: problemDetails.template.jsDocString
+            })
+            .returning({ id: TemplatesTable.id })
+        );
+      if (templateInsertError) {
+        console.error(
+          `There was an error inserting into TemplatesTable: ${templateInsertError.message}`
+        );
+        return Response.json(
+          `There was an error inserting into TemplatesTable: ${templateInsertError.message}`,
+          { status: 500 }
+        );
+      }
+      const templateId = templateInsertData[0].id;
+
+      // 4) TemplateArgsTable
+      const templateArgsValues = Object.keys(
+        problemDetails.template.typedArgs
+      ).map((language) => ({
+        template_id: templateId,
+        language,
+        typed_args: JSON.stringify(
+          problemDetails.template.typedArgs[
+            language as keyof typeof problemDetails.template.typedArgs
+          ]
+        ),
+        return_type:
+          problemDetails.template.returnType[
+            language as keyof typeof problemDetails.template.returnType
+          ]
+      }));
+      const { error: templateArgsInsertError } = await tryCatch(
+        tx.insert(TemplateArgsTable).values(templateArgsValues)
+      );
+      if (templateArgsInsertError) {
+        console.error(
+          `There was an error inserting into TemplateArgsTable: ${templateArgsInsertError.message}`
+        );
+        return Response.json(
+          `There was an error inserting into TemplateArgsTable: ${templateArgsInsertError.message}`,
+          { status: 500 }
+        );
+      }
+
+      // 5) TestCasesTable (per-language, per-index rows from testInputs/Outputs)
+      const numCases = problemDetails.template.testInputs.cpp.length;
+      const testCaseRows = Object.keys(
+        problemDetails.template.testInputs
+      ).flatMap((language) =>
+        Array.from({ length: numCases }).map((_, idx) => ({
+          problem_id: problemId,
+          language,
+          input:
+            problemDetails.template.testInputs[
+              language as keyof typeof problemDetails.template.testInputs
+            ][idx],
+          expected_output:
+            problemDetails.template.testOutputs[
+              language as keyof typeof problemDetails.template.testOutputs
+            ][idx],
+          test_case_number: idx + 1
+        }))
+      );
+      const { error: testCasesInsertError } = await tryCatch(
+        tx.insert(TestCasesTable).values(testCaseRows)
+      );
+      if (testCasesInsertError) {
+        console.error(
+          `There was an error inserting into TestCasesTable: ${testCasesInsertError.message}`
+        );
+        return Response.json(
+          `There was an error inserting into TestCasesTable: ${testCasesInsertError.message}`,
+          { status: 500 }
+        );
+      }
+
+      // TODO: insert referenceSolution into database somewhere
+
+      return { success: true };
     })
   );
-  console.log(
-    "📝 Inserting template args:",
-    JSON.stringify(templateArgsValues, null, 2)
-  );
 
-  const { error: templateArgsInsertError } = await tryCatch(
-    db.insert(TemplateArgsTable).values(templateArgsValues)
-  );
-  if (templateArgsInsertError) {
-    console.error(
-      `There was an error inserting into TemplateArgsTable:`,
-      templateArgsInsertError
-    );
-    console.error(
-      "Full error details:",
-      JSON.stringify(templateArgsInsertError, null, 2)
-    );
-    return Response.json(
-      `There was an error inserting into TemplateArgsTable: ${templateArgsInsertError.message}`,
-      {
-        status: 500
-      }
-    );
-  }
-
-  // Insert per-language, per-index rows into TestCasesTable from testInputs/Outputs
-  const numCases = problemDetails.template.testInputs.cpp.length;
-  const testCaseRows = Object.keys(problemDetails.template.testInputs).flatMap(
-    (language) =>
-      Array.from({ length: numCases }).map((_, idx) => ({
-        problem_id: problemId,
-        language,
-        input:
-          problemDetails.template.testInputs[
-            language as keyof typeof problemDetails.template.testInputs
-          ][idx],
-        expected_output:
-          problemDetails.template.testOutputs[
-            language as keyof typeof problemDetails.template.testOutputs
-          ][idx],
-        test_case_number: idx + 1
-      }))
-  );
-  const { error: testCasesInsertError } = await tryCatch(
-    db.insert(TestCasesTable).values(testCaseRows)
-  );
-  if (testCasesInsertError) {
-    console.error(
-      `There was an error inserting into TestCasesTable: ${testCasesInsertError.message}`
-    );
-    return Response.json(
-      `There was an error inserting into TestCasesTable: ${testCasesInsertError.message}`,
-      {
-        status: 500
-      }
-    );
+  if (transactionError) {
+    console.error(`Transaction failed: ${transactionError}`);
+    return Response.json(`Transaction failed: ${transactionError}`, {
+      status: 500
+    });
   }
 
   return Response.json({ success: true });

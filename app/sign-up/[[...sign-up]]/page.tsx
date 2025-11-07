@@ -180,7 +180,7 @@ export default function SignUpPage() {
 
         <form className="mt-8 space-y-6" onSubmit={handleEmailSignUp}>
           <div className="space-y-4">
-            <div>
+            <div suppressHydrationWarning>
               <label htmlFor="email" className="block text-sm font-medium">
                 Email address
               </label>
@@ -196,7 +196,7 @@ export default function SignUpPage() {
                 placeholder="Enter your email"
               />
             </div>
-            <div>
+            <div suppressHydrationWarning>
               <label htmlFor="username" className="block text-sm font-medium">
                 Username
               </label>
@@ -212,7 +212,7 @@ export default function SignUpPage() {
                 placeholder="Choose a username"
               />
             </div>
-            <div>
+            <div suppressHydrationWarning>
               <label htmlFor="password" className="block text-sm font-medium">
                 Password
               </label>

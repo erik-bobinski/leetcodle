@@ -30,7 +30,7 @@ export const UsersTable = pgTable(
     vim_mode: boolean("vim_mode"),
     language: text("language"),
     username: text("username"),
-    email: text("email").notNull()
+    email: text("email").notNull().unique()
   },
   () => [
     // Enable RLS

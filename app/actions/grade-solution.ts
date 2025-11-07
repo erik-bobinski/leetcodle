@@ -9,7 +9,7 @@ import { getTestCases } from "./get-test-cases";
 import { gradeSolutionOutput } from "@/lib/ai-tooling";
 
 /**
- * Grades solution comparing output to expected output
+ * Grades solution comparing user's output to expected output
  * @param langId The Judge0 language ID for the submitted code
  * @param sourceCode The source code to grade
  * @param funcitonName The name of the function to be tested

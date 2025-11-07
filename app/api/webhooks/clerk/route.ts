@@ -54,10 +54,38 @@ export async function POST(req: Request) {
 
   if (eventType === "user.created") {
     const { id, email_addresses, username } = payload.data;
+    const email = email_addresses[0]?.email_address;
+
+    if (!email) {
+      console.error("No email address provided in user.created event");
+      return new Response("No email address provided", { status: 400 });
+    }
+
+    // Check if a user with this email already exists
+    const { data: existingUser, error: checkError } = await tryCatch(
+      db
+        .select({ user_id: UsersTable.user_id })
+        .from(UsersTable)
+        .where(eq(UsersTable.email, email))
+        .limit(1)
+    );
+
+    if (checkError) {
+      console.error("Error checking for existing user:", checkError);
+      return new Response("Failed to check for existing user", { status: 500 });
+    }
+
+    if (existingUser && existingUser.length > 0) {
+      console.log(
+        `User with email ${email} already exists (user_id: ${existingUser[0].user_id}), skipping insertion`
+      );
+      return new Response("User already exists", { status: 200 });
+    }
+
     const { error: insertError } = await tryCatch(
       db.insert(UsersTable).values({
         user_id: id,
-        email: email_addresses[0]?.email_address,
+        email,
         username,
         theme: null,
         font_size: 14,
