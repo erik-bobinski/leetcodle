@@ -197,7 +197,6 @@ export async function generateReferenceSolution(
   return data.object;
 }
 
-// TODO: dont have ai infer the correct outputs, take the ai-gen'd inputs and store code sandbox'd output in DB
 export async function generatePrerequisiteDataStructure(
   problemTitle: string,
   problemDescription: string,
