@@ -3,7 +3,8 @@ import { desc, eq } from "drizzle-orm";
 import {
   generatePrerequisiteDataStructure,
   generateProblemDetails,
-  generateReferenceSolution
+  generateReferenceSolution,
+  generateTestInputsForAllLanguages
 } from "@/lib/ai-tooling";
 import { tryCatch } from "@/lib/try-catch";
 import {
@@ -11,8 +12,11 @@ import {
   ProblemsTable,
   TemplateArgsTable,
   TemplatesTable,
-  TestCasesTable
+  TestCasesTable,
+  ReferenceSolutionsTable
 } from "@/drizzle/schema";
+import { generateExpectedOutputs } from "@/lib/judge0";
+import { normalizeIndentation } from "@/lib/utils";
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
@@ -21,72 +25,6 @@ export async function GET(request: Request) {
       status: 401
     });
   }
-
-  const problemDetails = await generateProblemDetails();
-  if (problemDetails instanceof Error) {
-    console.error(
-      `There was an error generating problemDetails: ${problemDetails.message}`
-    );
-    return Response.json(
-      `There was an error generating problemDetails: ${problemDetails.message}`,
-      { status: 500 }
-    );
-  }
-
-  const referenceSolution = await generateReferenceSolution(
-    problemDetails.description,
-    problemDetails.template.functionName,
-    problemDetails.template.argNames
-  );
-  if (referenceSolution instanceof Error) {
-    console.error(
-      `There was an error generating referenceSolution: ${referenceSolution.message}`
-    );
-    return Response.json(
-      `There was an error generating referenceSolution: ${referenceSolution.message}`,
-      { status: 500 }
-    );
-  }
-
-  const prerequisiteDataStructure = await generatePrerequisiteDataStructure(
-    problemDetails.title,
-    problemDetails.description
-  );
-  if (prerequisiteDataStructure instanceof Error) {
-    console.error(
-      `There was an error generating prerequisiteDataStructure: ${prerequisiteDataStructure.message}`
-    );
-    return Response.json(
-      `There was an error generating prerequisiteDataStructure: ${prerequisiteDataStructure.message}`,
-      {
-        status: 500
-      }
-    );
-  }
-
-  const { data: mostRecentProblemData, error: mostRecentProblemError } =
-    await tryCatch(
-      db
-        .select({ problem_number: ProblemsTable.problem_number })
-        .from(ProblemsTable)
-        .orderBy(desc(ProblemsTable.created_at))
-        .limit(1)
-    );
-  if (mostRecentProblemError) {
-    console.error(
-      `There was an error fetching the most recent problem: ${mostRecentProblemError.message}`
-    );
-    return Response.json(
-      `There was an error fetching the most recent problem: ${mostRecentProblemError.message}`,
-      {
-        status: 500
-      }
-    );
-  }
-  const mostRecentProblemNumber =
-    mostRecentProblemData.length === 0
-      ? 0
-      : mostRecentProblemData[0].problem_number;
 
   // Set active_date to a week from now
   const activeDate = new Date();
@@ -120,13 +58,113 @@ export async function GET(request: Request) {
     });
   }
 
+  const problemDetails = await generateProblemDetails();
+  if (problemDetails instanceof Error) {
+    console.error(
+      `There was an error generating problemDetails: ${problemDetails.message}`
+    );
+    return Response.json(
+      `There was an error generating problemDetails: ${problemDetails.message}`,
+      { status: 500 }
+    );
+  }
+
+  const prerequisiteDataStructure = await generatePrerequisiteDataStructure(
+    problemDetails.title,
+    problemDetails.description,
+    problemDetails.template.functionName,
+    problemDetails.template.argNames,
+    problemDetails.template.typedArgs,
+    problemDetails.template.returnType
+  );
+  if (prerequisiteDataStructure instanceof Error) {
+    console.error(
+      `There was an error generating prerequisiteDataStructure: ${prerequisiteDataStructure.message}`
+    );
+    return Response.json(
+      `There was an error generating prerequisiteDataStructure: ${prerequisiteDataStructure.message}`,
+      {
+        status: 500
+      }
+    );
+  }
+
+  const referenceSolution = await generateReferenceSolution(
+    problemDetails.description,
+    problemDetails.template.functionName,
+    problemDetails.template.argNames,
+    prerequisiteDataStructure.prerequisiteDataStructure
+  );
+  if (referenceSolution instanceof Error) {
+    console.error(
+      `There was an error generating referenceSolution: ${referenceSolution.message}`
+    );
+    return Response.json(
+      `There was an error generating referenceSolution: ${referenceSolution.message}`,
+      { status: 500 }
+    );
+  }
+
+  const { data: mostRecentProblemData, error: mostRecentProblemError } =
+    await tryCatch(
+      db
+        .select({ problem_number: ProblemsTable.problem_number })
+        .from(ProblemsTable)
+        .orderBy(desc(ProblemsTable.created_at))
+        .limit(1)
+    );
+  if (mostRecentProblemError) {
+    console.error(
+      `There was an error fetching the most recent problem: ${mostRecentProblemError.message}`
+    );
+    return Response.json(
+      `There was an error fetching the most recent problem: ${mostRecentProblemError.message}`,
+      {
+        status: 500
+      }
+    );
+  }
+  const mostRecentProblemNumber =
+    mostRecentProblemData.length === 0
+      ? 0
+      : mostRecentProblemData[0].problem_number;
+
   // Prepare data for later inserts
   const prerequisiteEntries =
-    prerequisiteDataStructure !== undefined
-      ? Object.entries(prerequisiteDataStructure).filter(
+    prerequisiteDataStructure.prerequisiteDataStructure !== undefined
+      ? Object.entries(
+          prerequisiteDataStructure.prerequisiteDataStructure
+        ).filter(
           ([, code]) => typeof code === "string" && code.trim().length > 0
         )
       : [];
+
+  // Generate test inputs for all languages using AI
+  const convertedTestInputsResult = await generateTestInputsForAllLanguages(
+    prerequisiteDataStructure.testInputs.python,
+    prerequisiteDataStructure.prerequisiteDataStructure,
+    problemDetails.template.typedArgs
+  );
+  if (convertedTestInputsResult instanceof Error) {
+    console.error(convertedTestInputsResult);
+    return Response.json(
+      `Error generating test inputs for all languages: ${convertedTestInputsResult.message}`,
+      { status: 500 }
+    );
+  }
+  const convertedTestInputs = convertedTestInputsResult;
+
+  const expectedOutputs = await generateExpectedOutputs(
+    convertedTestInputs,
+    referenceSolution,
+    problemDetails.template.functionName,
+    4, // indent level
+    problemDetails.template.returnType
+  );
+  if (expectedOutputs instanceof Error) {
+    console.error(expectedOutputs);
+    return Response.json(`${expectedOutputs}`, { status: 500 });
+  }
 
   // Wrap all inserts in a transaction to ensure atomicity
   // If any insert fails, all changes are rolled back
@@ -179,7 +217,7 @@ export async function GET(request: Request) {
           tx.insert(PrerequisiteDataStructuresTable).values(
             prerequisiteEntries.map(([langKey, code]) => ({
               language: langKey,
-              data_structure_code: code,
+              data_structure_code: normalizeIndentation(code),
               problem_id: problemId
             }))
           )
@@ -248,27 +286,23 @@ export async function GET(request: Request) {
         );
       }
 
-      // 5) TestCasesTable (per-language, per-index rows from testInputs/Outputs)
-      const numCases = problemDetails.template.testInputs.cpp.length;
-      const testCaseRows = Object.keys(
-        problemDetails.template.testInputs
+      // 5) TestCasesTable (per-language, per-index rows from testInputs/expectedOutputs)
+      const numCases = convertedTestInputs.python.length;
+      const testCaseValues = (
+        Object.keys(convertedTestInputs) as Array<
+          keyof typeof convertedTestInputs
+        >
       ).flatMap((language) =>
         Array.from({ length: numCases }).map((_, idx) => ({
           problem_id: problemId,
           language,
-          input:
-            problemDetails.template.testInputs[
-              language as keyof typeof problemDetails.template.testInputs
-            ][idx],
-          expected_output:
-            problemDetails.template.testOutputs[
-              language as keyof typeof problemDetails.template.testOutputs
-            ][idx],
+          input: convertedTestInputs[language][idx],
+          expected_output: expectedOutputs[language][idx],
           test_case_number: idx + 1
         }))
       );
       const { error: testCasesInsertError } = await tryCatch(
-        tx.insert(TestCasesTable).values(testCaseRows)
+        tx.insert(TestCasesTable).values(testCaseValues)
       );
       if (testCasesInsertError) {
         console.error(
@@ -280,12 +314,27 @@ export async function GET(request: Request) {
         );
       }
 
-      // TODO: insert referenceSolution into database somewhere
-
-      return { success: true };
+      const referenceSolutionsValues = Object.entries(referenceSolution).map(
+        (entry) => ({
+          problem_id: problemId,
+          language: entry[0],
+          code: entry[1]
+        })
+      );
+      const { error: referenceSolutionsInsertError } = await tryCatch(
+        tx.insert(ReferenceSolutionsTable).values(referenceSolutionsValues)
+      );
+      if (referenceSolutionsInsertError) {
+        console.error(
+          `There was an error inserting into ReferenceSolutionsTable: ${referenceSolutionsInsertError.message}`
+        );
+        return Response.json(
+          `There was an error inserting into ReferenceSolutionsTable: ${referenceSolutionsInsertError.message}`,
+          { status: 500 }
+        );
+      }
     })
   );
-
   if (transactionError) {
     console.error(`Transaction failed: ${transactionError}`);
     return Response.json(`Transaction failed: ${transactionError}`, {

@@ -176,8 +176,8 @@ export const PrerequisiteDataStructuresTable = pgTable(
     problem_id: uuid("problem_id")
       .notNull()
       .references(() => ProblemsTable.id, { onDelete: "cascade" }),
-    language: text("language").notNull(), // 'cpp', 'python', 'javascript', etc.
-    data_structure_code: text("data_structure_code").notNull(), // The prerequisite code for this language
+    language: text("language").notNull(),
+    data_structure_code: text("data_structure_code").notNull(),
     created_at: timestamp("created_at", { withTimezone: true }).default(
       sql`now()`
     )
@@ -200,11 +200,43 @@ export const PrerequisiteDataStructuresTable = pgTable(
   ]
 );
 
+export const ReferenceSolutionsTable = pgTable(
+  "reference_solutions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    problem_id: uuid("problem_id")
+      .notNull()
+      .references(() => ProblemsTable.id, { onDelete: "cascade" }),
+    language: text("language").notNull(),
+    code: text("code").notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).default(
+      sql`now()`
+    )
+  },
+  (table) => [
+    index("reference_solutions_problem_id_idx").on(table.problem_id),
+    index("reference_solutions_language_idx").on(table.language),
+    unique("reference_solutions_problem_language_unique").on(
+      table.problem_id,
+      table.language
+    ),
+    // Enable RLS
+    sql`ALTER TABLE reference_solutions ENABLE ROW LEVEL SECURITY`,
+    // Only service role has access
+    pgPolicy("reference_solutions_service_role_only", {
+      for: "all",
+      to: serviceRole,
+      using: sql`true`
+    })
+  ]
+);
+
 // Relations for type-safe queries
 export const problemsRelations = relations(ProblemsTable, ({ one, many }) => ({
   template: one(TemplatesTable),
   testCases: many(TestCasesTable),
   prerequisiteDataStructures: many(PrerequisiteDataStructuresTable),
+  referenceSolutions: many(ReferenceSolutionsTable),
   userSubmissions: many(UserSubmissionsTable)
 }));
 
@@ -250,7 +282,16 @@ export const prerequisiteDataStructuresRelations = relations(
   })
 );
 
-// User submissions table - main submission record
+export const referenceSolutionsRelations = relations(
+  ReferenceSolutionsTable,
+  ({ one }) => ({
+    problem: one(ProblemsTable, {
+      fields: [ReferenceSolutionsTable.problem_id],
+      references: [ProblemsTable.id]
+    })
+  })
+);
+
 export const UserSubmissionsTable = pgTable(
   "user_submissions",
   {
@@ -286,7 +327,6 @@ export const UserSubmissionsTable = pgTable(
   ]
 );
 
-// User submission code by language - replaces JSON latest_code field
 export const UserSubmissionCodeTable = pgTable(
   "user_submission_code",
   {
@@ -321,7 +361,6 @@ export const UserSubmissionCodeTable = pgTable(
   ]
 );
 
-// User submission attempts - replaces JSON attempts array
 export const UserSubmissionAttemptsTable = pgTable(
   "user_submission_attempts",
   {
@@ -351,7 +390,6 @@ export const UserSubmissionAttemptsTable = pgTable(
   ]
 );
 
-// Additional relations for user submission tables
 export const userSubmissionsRelations = relations(
   UserSubmissionsTable,
   ({ one, many }) => ({

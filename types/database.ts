@@ -33,6 +33,41 @@ export type GetProblem = ProblemTable & {
 export type GetProblemResult = GetProblem | { error: string };
 
 // Zod schemas for AI-generated data
+export const problemDetailsBasicSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  example_input: z.string(),
+  example_output: z.string()
+});
+
+export const problemDetailsTemplateSchema = z.object({
+  functionName: z.string(),
+  argNames: z.array(z.string()),
+  typedArgs: z.object({
+    cpp: z.array(z.string()),
+    go: z.array(z.string()),
+    java: z.array(z.string()),
+    javascript: z.array(z.string()),
+    python: z.array(z.string()),
+    rust: z.array(z.string()),
+    typescript: z.array(z.string())
+  }),
+  returnType: z.object({
+    cpp: z.string(),
+    go: z.string(),
+    java: z.string(),
+    javascript: z.string(),
+    python: z.string(),
+    rust: z.string(),
+    typescript: z.string()
+  }),
+  jsDocString: z.string().describe(
+    `A JSON string where keys are parameter names
+      and values are their types, and a "returns" key. Example:
+      \'{ "s": "string", "nums": "Array<number>", "returns": "number" }\'`
+  )
+});
+
 export const problemDetailsSchema = z.object({
   title: z.string(),
   description: z.string(),
@@ -42,24 +77,6 @@ export const problemDetailsSchema = z.object({
     functionName: z.string(),
     argNames: z.array(z.string()),
     typedArgs: z.object({
-      cpp: z.array(z.string()),
-      go: z.array(z.string()),
-      java: z.array(z.string()),
-      javascript: z.array(z.string()),
-      python: z.array(z.string()),
-      rust: z.array(z.string()),
-      typescript: z.array(z.string())
-    }),
-    testInputs: z.object({
-      cpp: z.array(z.string()),
-      go: z.array(z.string()),
-      java: z.array(z.string()),
-      javascript: z.array(z.string()),
-      python: z.array(z.string()),
-      rust: z.array(z.string()),
-      typescript: z.array(z.string())
-    }),
-    testOutputs: z.object({
       cpp: z.array(z.string()),
       go: z.array(z.string()),
       java: z.array(z.string()),
@@ -93,17 +110,46 @@ export const referenceSolutionSchema = z.object({
   rust: z.string(),
   typescript: z.string()
 });
-export const prerequisiteDataStructureSchema = z
-  .object({
-    cpp: z.string(),
-    go: z.string(),
-    java: z.string(),
-    javascript: z.string(),
-    python: z.string(),
-    rust: z.string(),
-    typescript: z.string()
+export const prerequisiteDataStructureSchema = z.object({
+  prerequisiteDataStructure: z
+    .object({
+      cpp: z.string(),
+      go: z.string(),
+      java: z.string(),
+      javascript: z.string(),
+      python: z.string(),
+      rust: z.string(),
+      typescript: z.string()
+    })
+    .optional(),
+  testInputs: z.object({
+    python: z.array(z.string()).length(5, "Must generate exactly 5 test inputs")
   })
-  .optional();
+});
+
+export const testInputsAllLanguagesSchema = z.object({
+  cpp: z
+    .array(z.string())
+    .length(5, "Must generate exactly 5 test inputs for each language"),
+  go: z
+    .array(z.string())
+    .length(5, "Must generate exactly 5 test inputs for each language"),
+  java: z
+    .array(z.string())
+    .length(5, "Must generate exactly 5 test inputs for each language"),
+  javascript: z
+    .array(z.string())
+    .length(5, "Must generate exactly 5 test inputs for each language"),
+  python: z
+    .array(z.string())
+    .length(5, "Must generate exactly 5 test inputs for each language"),
+  rust: z
+    .array(z.string())
+    .length(5, "Must generate exactly 5 test inputs for each language"),
+  typescript: z
+    .array(z.string())
+    .length(5, "Must generate exactly 5 test inputs for each language")
+});
 export const testCasesSolutionsSchema = z.object({
   testCase1: z.object({
     input: z.string(),

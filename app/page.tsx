@@ -2,8 +2,9 @@ import { getProblem } from "./actions/get-problem";
 import ProblemDetails from "@/components/ProblemDetails";
 import { connection } from "next/server";
 import Playground from "@/components/Playground";
-import { Wordle } from "@/components/Wordle";
+import { WordleGrid } from "@/components/WordleGrid";
 import { getUserSubmission } from "./actions/get-user-submission";
+import type { GetProblem } from "@/types/database";
 
 export default async function Home({
   searchParams
@@ -27,6 +28,8 @@ export default async function Home({
             <a
               href="https://twitter.com/erikbobinski"
               className="text-blue-500 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               twitter.com/erikbobinski
             </a>{" "}
@@ -37,7 +40,7 @@ export default async function Home({
     );
   }
 
-  const problem = getProblemResult;
+  const problem = getProblemResult as GetProblem;
   const template = problem.template;
   const prerequisite_data_structure =
     problem.prerequisite_data_structure ?? null;
@@ -58,6 +61,8 @@ export default async function Home({
             <a
               href="https://twitter.com/erikbobinski"
               className="text-blue-500 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               twitter.com/erikbobinski
             </a>{" "}
@@ -77,10 +82,14 @@ export default async function Home({
         latestCode={userSubmissionResult?.userSubmissionCode}
         template={template}
         prerequisiteDataStructure={prerequisite_data_structure}
-        problemTitle={problem?.title}
-        problemDescription={problem?.description}
+        problemTitle={problem.title}
+        problemDescription={problem.description}
+        date={params.date}
       />
-      <Wordle attempts={userSubmissionResult?.userSubmissionAttempts ?? []} />
+      <WordleGrid
+        initialAttempts={userSubmissionResult?.userSubmissionAttempts ?? []}
+        date={params.date}
+      />
     </>
   );
 }

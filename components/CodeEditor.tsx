@@ -30,7 +30,7 @@ import { lintKeymap } from "@codemirror/lint";
 import { indentWithTab } from "@codemirror/commands";
 import { indentUnit } from "@codemirror/language";
 import { languages } from "@/types/editor-languages";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { vim } from "@replit/codemirror-vim";
 import { getUser } from "../app/actions/get-preferences";
 import { tryCatch } from "@/lib/try-catch";
@@ -45,8 +45,11 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
-import { gradeUserCode } from "@/app/actions/grade-solution";
+import { gradeSolution } from "@/app/actions/grade-solution";
 import type { GetProblem, UserSubmissionCode } from "@/types/database";
+import { addUserSubmission } from "@/app/actions/add-user-submission";
+import { useAuth } from "@clerk/nextjs";
+import { saveLocalSubmission } from "@/lib/local-submissions";
 
 const leetcodleTheme = createTheme({
   variant: "dark",
@@ -83,7 +86,8 @@ export default function CodeEditor({
   problemTitle,
   problemDescription,
   onSubmissionResult,
-  latestCode
+  latestCode,
+  date
 }: {
   template: GetProblem["template"];
   prerequisiteDataStructure: GetProblem["prerequisite_data_structure"];
@@ -92,17 +96,21 @@ export default function CodeEditor({
   onSubmissionResult?: (result: {
     graded: boolean;
     hint: string | null;
-    isCorrect: boolean[];
-    time?: string;
-    memory?: number;
-    error?: string | null;
-    stdout?: string | null;
+    userAttempts: boolean[];
+    time: string;
+    memory: number;
+    error: string | null;
+    stdout: string | null;
   }) => void;
   latestCode?: UserSubmissionCode | null;
+  date?: string;
 }) {
   const [langKey, setLangKey] = useState<keyof typeof languages>(
-    latestCode?.language || "cpp"
+    (latestCode?.language as keyof typeof languages) || "cpp"
   );
+
+  // Store code per language to preserve work when switching
+  const codePerLanguageRef = useRef<Map<string, string>>(new Map());
 
   const processBoilerplate = useCallback(
     (
@@ -172,6 +180,20 @@ export default function CodeEditor({
         }
       }
 
+      // For Go, package main must be at the very top, before everything else
+      if (langKey === "go") {
+        const prerequisiteCode = prerequisiteDataStructure?.find(
+          (obj) => obj.language === langKey
+        );
+        if (prerequisiteCode) {
+          // package main, then prerequisite, then function
+          return `package main\n\n${prerequisiteCode.data_structure_code}\n\n${processed}`;
+        } else {
+          // Just package main, then function
+          return `package main\n\n${processed}`;
+        }
+      }
+
       // Add prerequisiteDataStructure at the very top (after JSDoc if present)
       const prerequisiteCode = prerequisiteDataStructure?.find(
         (obj) => obj.language === langKey
@@ -187,18 +209,35 @@ export default function CodeEditor({
   const [isVim, setIsVim] = useState(false);
   const [tabSizeValue, setTabSizeValue] = useState(2);
 
-  const [code, setCode] = useState(
-    latestCode?.code ||
-      processBoilerplate(
-        languages[langKey].boilerplate,
-        tabSizeValue,
-        template ?? undefined
-      )
-  );
+  // Initialize code: use latestCode if it exists and matches the current language, otherwise use boilerplate
+  const [code, setCode] = useState(() => {
+    if (latestCode && latestCode.language === langKey) {
+      return latestCode.code;
+    }
+    return processBoilerplate(
+      languages[langKey].boilerplate,
+      tabSizeValue,
+      template ?? undefined
+    );
+  });
   const [tabSize, setTabSize] = useState(indentUnit.of("  "));
   const [fontSize, setFontSize] = useState<number | null>(null);
   const [isLineNumbers, setIsLineNumbers] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isSignedIn } = useAuth();
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  // Handle language change: save current code before switching
+  const handleLanguageChange = useCallback(
+    (newLangKey: keyof typeof languages) => {
+      if (newLangKey !== langKey) {
+        // Save current code for the current language
+        codePerLanguageRef.current.set(langKey, code);
+        setLangKey(newLangKey);
+      }
+    },
+    [langKey, code]
+  );
 
   async function fetchPreferences() {
     // 1. check for prefs in local storage
@@ -218,7 +257,12 @@ export default function CodeEditor({
       );
       if (!jsonParseError && parsedPrefs) {
         // Successfully parsed, set state and return
-        if ("language" in parsedPrefs && parsedPrefs.language in languages) {
+        // Only set language from preferences if there's no latestCode
+        if (
+          !latestCode &&
+          "language" in parsedPrefs &&
+          parsedPrefs.language in languages
+        ) {
           setLangKey(parsedPrefs.language);
         }
         if ("vim_mode" in parsedPrefs && parsedPrefs.vim_mode !== null) {
@@ -273,7 +317,9 @@ export default function CodeEditor({
     }
 
     const prefsFromDB = { ...result };
+    // Only set language from preferences if there's no latestCode
     if (
+      !latestCode &&
       "language" in prefsFromDB &&
       prefsFromDB.language !== null &&
       prefsFromDB.language in languages
@@ -325,7 +371,6 @@ export default function CodeEditor({
       line_numbers: prefsFromDB.line_numbers ?? true
     };
   }
-
   const { isLoading, error } = useQuery({
     queryKey: ["fetchPreferences"],
     queryFn: fetchPreferences,
@@ -334,14 +379,28 @@ export default function CodeEditor({
   });
 
   useEffect(() => {
-    setCode(
-      processBoilerplate(
-        languages[langKey].boilerplate,
-        tabSizeValue,
-        template ?? undefined
-      )
-    );
-  }, [langKey, tabSizeValue, processBoilerplate, template]);
+    // First, check if we have saved code for this language from a previous switch
+    const savedCode = codePerLanguageRef.current.get(langKey);
+    if (savedCode !== undefined) {
+      setCode(savedCode);
+      return;
+    }
+
+    // Only set boilerplate if we don't have latestCode for the current language
+    // or if latestCode is for a different language
+    if (!latestCode || latestCode.language !== langKey) {
+      setCode(
+        processBoilerplate(
+          languages[langKey].boilerplate,
+          tabSizeValue,
+          template ?? undefined
+        )
+      );
+    } else if (latestCode && latestCode.language === langKey) {
+      // Use latestCode if it matches the current language
+      setCode(latestCode.code);
+    }
+  }, [langKey, tabSizeValue, processBoilerplate, template, latestCode]);
 
   const extensions = useMemo(() => {
     return [
@@ -395,41 +454,87 @@ export default function CodeEditor({
     ];
   }, [isVim, langKey, fontSize, isLineNumbers, tabSize]);
 
-  // TODO: use tryCatch wrapper once submission flow is implemented
   async function handleSubmit() {
-    if (!code.trim() || code === languages[langKey].boilerplate) {
+    setIsSubmitting(true);
+    if (
+      !code.trim() ||
+      code ===
+        processBoilerplate(
+          languages[langKey].boilerplate,
+          tabSizeValue,
+          template ?? undefined
+        )
+    ) {
       alert("Write your program before submitting!");
+      setIsSubmitting(false);
       return;
     }
-    // submit code for grading
-    try {
-      setIsSubmitting(true);
-      const result = await gradeUserCode(
-        langKey,
-        code,
-        template?.function_name ?? "",
-        tabSizeValue,
-        problemTitle,
-        problemDescription
-      );
-      if (onSubmissionResult) {
-        onSubmissionResult(
-          result as {
-            graded: boolean;
-            hint: string | null;
-            isCorrect: boolean[];
-            time?: string;
-            memory?: number;
-            error?: string | null;
-            stdout?: string | null;
-          }
-        );
-      }
-    } catch (e) {
-      alert(e);
-    } finally {
+    const grade = await gradeSolution(
+      langKey,
+      code,
+      template?.function_name ?? "",
+      tabSizeValue,
+      problemTitle,
+      problemDescription,
+      date
+    );
+    if (grade instanceof Error) {
+      alert(grade);
       setIsSubmitting(false);
+      return;
     }
+
+    // Only save submission if the code was actually graded (not a runtime error)
+    if (grade.graded && "isCorrect" in grade && grade.isCorrect) {
+      const targetDate = date || new Date().toISOString().split("T")[0];
+
+      if (isSignedIn) {
+        // User is logged in - save to database
+        const addSubmissionResult = await addUserSubmission(
+          langKey,
+          code,
+          grade.isCorrect,
+          date ?? undefined
+        );
+        if (addSubmissionResult instanceof Error) {
+          alert(`Failed to save submission: ${addSubmissionResult}`);
+          console.error("Failed to save submission:", addSubmissionResult);
+        } else {
+          // Dispatch event to refresh Wordle grid
+          window.dispatchEvent(new Event("wordle-refresh"));
+        }
+      } else {
+        // User is not logged in - save to localStorage
+        const { error: saveLocalError } = await tryCatch(
+          Promise.resolve(
+            saveLocalSubmission(targetDate, langKey, code, grade.isCorrect)
+          )
+        );
+        if (saveLocalError) {
+          alert(`Failed to save submission locally: ${saveLocalError}`);
+          console.error("Failed to save submission locally:", saveLocalError);
+        } else {
+          // Dispatch event to refresh Wordle grid
+          window.dispatchEvent(new Event("wordle-refresh"));
+        }
+      }
+    }
+
+    // update react state in output component
+    if (onSubmissionResult) {
+      onSubmissionResult({
+        graded: grade.graded,
+        hint: grade.graded && "hint" in grade ? grade.hint : null,
+        userAttempts:
+          grade.graded && "isCorrect" in grade ? grade.isCorrect : [],
+        time: grade.time,
+        memory: grade.memory,
+        error: grade.error,
+        stdout: grade.stdout
+      });
+    }
+
+    setIsSubmitting(false);
   }
 
   if (isLoading) {
@@ -538,7 +643,9 @@ export default function CodeEditor({
               {Object.entries(languages).map(([key, lang]) => (
                 <DropdownMenuItem
                   key={key}
-                  onClick={() => setLangKey(key as keyof typeof languages)}
+                  onClick={() =>
+                    handleLanguageChange(key as keyof typeof languages)
+                  }
                   className="cursor-pointer"
                 >
                   {lang.name} ({lang.version})
@@ -548,22 +655,34 @@ export default function CodeEditor({
           </DropdownMenu>
           <Button
             variant="outline"
-            onClick={() => setIsVim(!isVim)}
+            onClick={() => {
+              setIsVim(!isVim);
+              // Focus the editor after toggling Vim mode
+              const editorElement = editorRef.current?.querySelector(
+                ".cm-content"
+              ) as HTMLElement;
+              if (editorElement) {
+                editorElement.focus();
+              }
+            }}
             data-slot="dropdown-menu-trigger"
             className="cursor-pointer"
           >
             {isVim ? "Vim: On" : "Vim: Off"}
           </Button>
         </div>
-        <CodeMirror
-          extensions={extensions}
-          value={code}
-          onChange={(value) => {
-            setCode(value);
-          }}
-          theme={leetcodleTheme}
-          tabIndex={tabSizeValue}
-        />
+        <div ref={editorRef}>
+          <CodeMirror
+            key={langKey}
+            extensions={extensions}
+            value={code}
+            onChange={(value) => {
+              setCode(value);
+            }}
+            theme={leetcodleTheme}
+            tabIndex={tabSizeValue}
+          />
+        </div>
       </div>
       <div className="flex justify-start pt-2">
         <Button

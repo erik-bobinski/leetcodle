@@ -6,7 +6,7 @@ import { go } from "@codemirror/lang-go";
 import { java } from "@codemirror/lang-java";
 import { LanguageSupport } from "@codemirror/language";
 
-interface Language {
+export interface Language {
   name: string;
   version: string;
   extension: () => LanguageSupport;
@@ -14,19 +14,16 @@ interface Language {
   language_id: number;
 }
 
-export const languages: Record<string, Language> = {
+export const languages = {
   cpp: {
     name: "C++",
     version: "17, GCC 9.2.0",
     extension: cpp,
     language_id: 54,
-    boilerplate: `class Solution {
-public:
-{{indent}}{{returns}} {{functionName}}({{args}}) {
-{{indent}}{{indent}}// write all code within this function
-{{indent}}{{indent}}
-{{indent}}}
-};`
+    boilerplate: `{{returns}} {{functionName}}({{args}}) {
+{{indent}}// write all code within this function
+{{indent}}
+}`
   },
   go: {
     name: "Go",
@@ -43,8 +40,9 @@ public:
     version: "JDK 17.0.6",
     extension: java,
     language_id: 91,
-    boilerplate: `class Solution {
-{{indent}}public {{returns}} {{functionName}}({{args}}) {
+    boilerplate: `public class Main {
+{{indent}}public static {{returns}} {{functionName}}({{args}}) {
+{{indent}}{{indent}}// write all code within this function
 {{indent}}{{indent}}
 {{indent}}}
 }`
@@ -73,21 +71,18 @@ public:
     version: "3.13.2",
     extension: python,
     language_id: 109,
-    boilerplate: `class Solution:
-{{indent}}def {{functionName}}(self, {{args}}) -> {{returns}}:
-{{indent}}{{indent}}# write all code within this function
-{{indent}}{{indent}}`
+    boilerplate: `def {{functionName}}({{args}}) -> {{returns}}:
+{{indent}}# write all code within this function
+{{indent}}`
   },
   rust: {
     name: "Rust",
     version: "1.85.0",
     extension: rust,
     language_id: 108,
-    boilerplate: `impl Solution {
-{{indent}}pub fn {{functionName}}({{args}}) -> {{returns}} {
-{{indent}}{{indent}}// write all code within this function
-{{indent}}{{indent}}
-{{indent}}}
+    boilerplate: `pub fn {{functionName}}({{args}}) -> {{returns}} {
+{{indent}}// write all code within this function
+{{indent}}
 }`
   }
 };

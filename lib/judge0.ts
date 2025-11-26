@@ -1,4 +1,8 @@
-import { Judge0ExecutionResponse } from "@/types/judge0";
+import type { Judge0ExecutionResponse } from "@/types/judge0";
+import { languages } from "@/types/editor-languages";
+import parseCodeForSubmission from "@/lib/code-parsers";
+import { fixExecutableCode } from "@/lib/ai-tooling";
+import type { ReferenceSolution } from "@/types/database";
 
 // Helper function to get the base URL for API calls
 function getBaseUrl(): string {
@@ -11,7 +15,7 @@ function getBaseUrl(): string {
 }
 
 /**
- * Submits code to Judge0 API server-side synchronously
+ * Submits code to Judge0 API synchronously server-side
  * @param source_code The code to execute
  * @param language_id The language ID
  * @returns The execution result or an error
@@ -20,13 +24,16 @@ export async function submitCode(
   source_code: string,
   language_id: number
 ): Promise<Judge0ExecutionResponse | string> {
+  "use server";
+
   try {
     const compiler_options = language_id === 54 ? "-std=c++17" : null;
     const baseUrl = getBaseUrl();
     const response = await fetch(`${baseUrl}/api/judge0?wait=true`, {
       method: "POST",
       headers: {
-        "content-type": "application/json"
+        "content-type": "application/json",
+        authorization: `Bearer ${process.env.API_SECRET}`
       },
       body: JSON.stringify({
         source_code,
@@ -49,46 +56,100 @@ export async function submitCode(
   }
 }
 
-export async function generateTestCasesOutputs(
-  solutionsWithTestCases: Record<string, { input: string; code: string }>
-): Promise<Record<string, { input: string; code: string }>> {
-  const results: Record<string, { input: string; code: string }> = {};
+export async function generateExpectedOutputs(
+  testInputs: Record<string, string[]>,
+  referenceSolution: ReferenceSolution,
+  functionName: string,
+  indent: number,
+  returnType?: Record<string, string>
+) {
+  "use server";
+
+  const testOutputs: Record<string, string[]> = {};
 
   // Run solutions sequentially to avoid rate limiting
-  for (const [testCaseKey, testCaseData] of Object.entries(
-    solutionsWithTestCases
-  )) {
-    console.log(`Executing test case: ${testCaseKey}`);
+  for (const language of Object.keys(testInputs)) {
+    const inputs = testInputs[language];
+    console.log(`Executing test cases for language: ${language}`);
 
     // Add delay between requests to respect rate limits
-    if (Object.keys(results).length > 0) {
-      console.log("Waiting 0.5 seconds before next request...");
+    if (Object.keys(testOutputs).length > 0) {
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
-    // Extract the source code from the new structure
-    const sourceCode = testCaseData.code;
-
-    const result = await submitCode(sourceCode, 71); // use python
-
-    // Extract the stdout from the result
-    let output = "";
-    if (typeof result === "string") {
-      output = `Error running test case: ${result}`;
-      console.error(`Test case ${testCaseKey} failed: ${result}`);
-    } else {
-      output = result.stdout || ""; // Get the stdout from successful execution
-      console.log(`Test case ${testCaseKey} completed successfully`);
+    // Get the reference solution code for this language
+    const solutionCode = referenceSolution[language as keyof ReferenceSolution];
+    if (!solutionCode) {
+      console.error(`No reference solution found for language: ${language}`);
+      return new Error(`No reference solution found for language: ${language}`);
     }
 
-    // Preserve the original structure but replace code with output
-    results[testCaseKey] = {
-      input: testCaseData.input,
-      code: output
-    };
+    // Get language ID
+    const languageConfig = languages[language as keyof typeof languages];
+    if (!languageConfig) {
+      console.error(`Unsupported language: ${language}`);
+      testOutputs[language] = inputs.map(() => "");
+      continue;
+    }
+
+    // Get return type for this language
+    const langReturnType = returnType?.[language] || "";
+
+    // Parse the code with all test inputs
+    let executableCode = parseCodeForSubmission(
+      language,
+      solutionCode,
+      functionName,
+      inputs,
+      indent,
+      langReturnType
+    );
+    if (executableCode instanceof Error) {
+      return executableCode;
+    }
+
+    // Use AI to fix extraneous runtime/compilation errors before submission
+    const fixedCodeResult = await fixExecutableCode(
+      executableCode,
+      language,
+      langReturnType
+    );
+    if (fixedCodeResult instanceof Error) {
+      return fixedCodeResult;
+    }
+    executableCode = fixedCodeResult;
+
+    // Execute the code
+    const result = await submitCode(executableCode, languageConfig.language_id);
+
+    // Extract and parse the stdout
+    let outputs: string[] = [];
+    if (typeof result === "string") {
+      console.error(`Test case execution failed for ${language}: ${result}`);
+      outputs = inputs.map(() => "");
+    } else {
+      const stdout = result.stdout || "";
+      if (stdout.trim()) {
+        outputs = stdout
+          .trim()
+          .split(",")
+          .map((item) => item.trim());
+      } else {
+        outputs = inputs.map(() => "");
+      }
+      console.log(
+        `Test case execution completed for ${language}, got ${outputs.length} outputs`
+      );
+    }
+
+    // Ensure we have the correct number of outputs
+    while (outputs.length < inputs.length) {
+      outputs.push("");
+    }
+    testOutputs[language] = outputs.slice(0, inputs.length);
   }
 
-  return results;
+  return testOutputs;
 }
 
 /**

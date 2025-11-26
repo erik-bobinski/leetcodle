@@ -1,79 +1,165 @@
-// TODO: migrate all server actions to drizzle, update corresponding client logic, and use tryCatch() wrapper
-
 "use server";
 
-import { supabase } from "@/lib/supabase";
+import { db } from "@/drizzle";
+import { eq, and, sql, desc } from "drizzle-orm";
+import { tryCatch } from "@/lib/try-catch";
+import {
+  ProblemsTable,
+  UserSubmissionsTable,
+  UserSubmissionCodeTable,
+  UserSubmissionAttemptsTable
+} from "@/drizzle/schema";
 import { auth } from "@clerk/nextjs/server";
 import { languages } from "@/types/editor-languages";
-export async function addAttempts(
+export async function addUserSubmission(
   langKey: string,
   code: string,
   newAttempt: boolean[],
   date?: string
 ) {
-  // push attempt to DB if user is logged in
-  // TODO: localStorage will track it otherwise for non-logged in users
-  const { userId } = await auth();
+  // TODO: localStorage should track this otherwise for non-logged in users
+
+  const { data: authData, error: authError } = await tryCatch(auth());
+  if (authError instanceof Error) return authError;
+  const userId = authData?.userId;
   if (!userId) {
-    return;
+    return new Error("User must be logged in to save submissions");
   }
 
   if (!Object.keys(languages).includes(langKey)) {
-    throw new Error(`Current language isn't supported`);
+    return new Error(`Current language: ${langKey} isn't supported`);
   }
 
-  // Use provided date or default to today
   const targetDate = date || new Date().toISOString().split("T")[0];
 
-  // Get problem ID for the target date
-  const { data: problem, error: problemError } = await supabase
-    .from("problems")
-    .select("id")
-    .eq("active_date", targetDate)
-    .single();
+  // Get problem for target date
+  const { data: problemDataArray, error: problemError } = await tryCatch(
+    db
+      .select({ problemId: ProblemsTable.id })
+      .from(ProblemsTable)
+      .where(eq(ProblemsTable.active_date, targetDate))
+      .limit(1)
+  );
   if (problemError) {
-    console.error(`Problem fetch error: ${problemError.message}`);
-    return null;
+    return problemError;
   }
-  if (!problem?.id) {
-    // user has no attempts
-    return null;
-  }
-
-  // Get current attempts array
-  const { data: storedAttempts, error: storedAttemptsError } = await supabase
-    .from("user_submissions")
-    .select("attempts")
-    .eq("user_id", userId)
-    .eq("problem_id", problem.id)
-    .single();
-  if (storedAttemptsError) {
-    throw new Error(storedAttemptsError.message);
-  }
-
-  // Build the new attempts array
-  const existingAttempts = storedAttempts?.attempts || [];
-  const updatedAttempts = [...existingAttempts, newAttempt];
-  if (updatedAttempts.length > 5) {
-    const addAttemptsError = new Error(
-      "You used all attempts for this problem"
+  if (problemDataArray === null || problemDataArray.length === 0) {
+    return new Error(
+      `No problem id found for date: ${targetDate} found while adding user submission`
     );
-    addAttemptsError.name = "attempts_exceeded";
-    throw addAttemptsError;
+  }
+  const { problemId } = problemDataArray[0];
+
+  const { error: transactionError } = await tryCatch(
+    db.transaction(async (tx) => {
+      // Check if submission already exists for this user and problem
+      const { data: existingSubmission, error: checkError } = await tryCatch(
+        tx
+          .select({ id: UserSubmissionsTable.id })
+          .from(UserSubmissionsTable)
+          .where(
+            and(
+              eq(UserSubmissionsTable.user_id, userId),
+              eq(UserSubmissionsTable.problem_id, problemId)
+            )
+          )
+          .limit(1)
+      );
+      if (checkError) {
+        throw checkError;
+      }
+
+      let submissionId: string;
+      if (existingSubmission && existingSubmission.length > 0) {
+        // Use existing submission
+        submissionId = existingSubmission[0].id;
+      } else {
+        // Insert new row in user_submissions
+        const { data: newSubmission, error: insertError } = await tryCatch(
+          tx
+            .insert(UserSubmissionsTable)
+            .values({
+              user_id: userId,
+              problem_id: problemId
+            })
+            .returning({ id: UserSubmissionsTable.id })
+        );
+        if (insertError) {
+          throw insertError;
+        }
+        if (!newSubmission || newSubmission.length === 0) {
+          throw new Error("Failed to create user submission");
+        }
+        submissionId = newSubmission[0].id;
+      }
+
+      // Insert attempt into user_submission_attempts
+      // Get the max attempt number for this submission to determine the next attempt number
+      const { data: existingAttempts, error: attemptsCheckError } =
+        await tryCatch(
+          tx
+            .select({
+              attempt_number: UserSubmissionAttemptsTable.attempt_number
+            })
+            .from(UserSubmissionAttemptsTable)
+            .where(eq(UserSubmissionAttemptsTable.submission_id, submissionId))
+            .orderBy(desc(UserSubmissionAttemptsTable.attempt_number))
+            .limit(1)
+        );
+      if (attemptsCheckError) {
+        throw attemptsCheckError;
+      }
+
+      // Calculate next attempt number (if no attempts exist, start at 1)
+      const nextAttemptNumber =
+        existingAttempts && existingAttempts.length > 0
+          ? existingAttempts[0].attempt_number + 1
+          : 1;
+      if (nextAttemptNumber > 5) {
+        return new Error("All 5 attempts have been used for this problem");
+      }
+
+      const testCaseResultsJson = JSON.stringify(newAttempt);
+      const { error: insertAttemptError } = await tryCatch(
+        tx.insert(UserSubmissionAttemptsTable).values({
+          submission_id: submissionId,
+          attempt_number: nextAttemptNumber,
+          test_case_results: testCaseResultsJson
+        })
+      );
+      if (insertAttemptError) {
+        return insertAttemptError;
+      }
+
+      // Upsert code in user_submission_code
+      const { error: upsertCodeError } = await tryCatch(
+        tx
+          .insert(UserSubmissionCodeTable)
+          .values({
+            submission_id: submissionId,
+            language: langKey,
+            code: code
+          })
+          .onConflictDoUpdate({
+            target: [
+              UserSubmissionCodeTable.submission_id,
+              UserSubmissionCodeTable.language
+            ],
+            set: {
+              code: code,
+              updated_at: sql`now()`
+            }
+          })
+      );
+      if (upsertCodeError) {
+        return upsertCodeError;
+      }
+    })
+  );
+
+  if (transactionError) {
+    return transactionError;
   }
 
-  const { error } = await supabase
-    .from("user_submissions")
-    .update({
-      latest_code: {
-        [langKey]: code
-      },
-      attempts: updatedAttempts
-    })
-    .eq("user_id", userId)
-    .eq("problem_id", problem.id);
-  if (error) {
-    console.error("Database error:", error);
-    throw new Error(`Failed to update preferences: ${error.message}`);
-  }
+  return { success: true };
 }

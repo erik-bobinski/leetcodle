@@ -1,24 +1,39 @@
-// TODO: migrate all server actions to drizzle, update corresponding client logic, and use tryCatch() wrapper
-
 "use server";
 
-import { supabase } from "@/lib/supabase";
-import { Problems } from "@/types/database";
+import { db } from "@/drizzle";
+import { eq } from "drizzle-orm";
+import { tryCatch } from "@/lib/try-catch";
+import { ProblemsTable, TestCasesTable } from "@/drizzle/schema";
 
-export async function getTestCases() {
-  // TODO: this will have to access URL params when the REST problem page is implemented
-  const today = new Date().toISOString().split("T")[0];
-  const { data, error } = await supabase
-    .from("problems")
-    .select("test_cases")
-    .eq("active_date", today)
-    .single();
-  if (error) {
-    throw new Error(`Database Error: ${error.message}`);
+export async function getTestArgs(date?: string) {
+  const targetDate = date?.trim() || new Date().toISOString().split("T")[0];
+
+  const { data: problemData, error: problemError } = await tryCatch(
+    db
+      .select({ problemId: ProblemsTable.id })
+      .from(ProblemsTable)
+      .where(eq(ProblemsTable.active_date, targetDate))
+  );
+  if (problemError) {
+    return problemError;
+  }
+  if (problemData.length === 0) {
+    return [];
+  }
+  const { problemId } = problemData[0];
+
+  const { data: testCasesData, error: testCasesError } = await tryCatch(
+    db
+      .select()
+      .from(TestCasesTable)
+      .where(eq(TestCasesTable.problem_id, problemId))
+  );
+  if (testCasesError) {
+    return testCasesError;
+  }
+  if (testCasesData.length === 0) {
+    return [];
   }
 
-  if (!data || data.test_cases == null)
-    throw new Error("No test_cases found in database");
-
-  return data.test_cases as Problems["test_cases"];
+  return testCasesData;
 }
