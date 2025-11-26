@@ -3,7 +3,7 @@
 import { tryCatch } from "@/lib/try-catch";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/drizzle";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, asc } from "drizzle-orm";
 import {
   ProblemsTable,
   UserSubmissionsTable,
@@ -90,7 +90,7 @@ export async function getUserSubmission(date?: string) {
         .select()
         .from(UserSubmissionAttemptsTable)
         .where(eq(UserSubmissionAttemptsTable.submission_id, userSubmission.id))
-        .orderBy(desc(UserSubmissionAttemptsTable.attempt_number))
+        .orderBy(asc(UserSubmissionAttemptsTable.attempt_number))
     );
   if (userSubmissionAttemptError) {
     return {

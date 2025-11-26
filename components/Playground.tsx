@@ -10,13 +10,15 @@ export default function Playground({
   prerequisiteDataStructure,
   problemTitle,
   problemDescription,
-  latestCode
+  latestCode,
+  date
 }: {
   template: GetProblem["template"];
   prerequisiteDataStructure: GetProblem["prerequisite_data_structure"];
   problemTitle: GetProblem["title"];
   problemDescription: GetProblem["description"];
   latestCode?: UserSubmissionCode | null;
+  date?: string;
 }) {
   const [executionResult, setExecutionResult] = useState<{
     stdout: string | null;
@@ -44,6 +46,7 @@ export default function Playground({
             });
           }}
           latestCode={latestCode}
+          date={date}
         />
       </div>
 

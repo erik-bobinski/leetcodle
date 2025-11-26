@@ -38,6 +38,8 @@ export default async function Archive() {
             <a
               href="https://twitter.com/erikbobinski"
               className="text-blue-500 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               twitter.com/erikbobinski
             </a>{" "}

@@ -24,7 +24,7 @@ export default function CodeOutput({
               <span>Memory: {executionResult?.memory} KB</span>
             )}
             {executionResult?.time && (
-              <span>Time: {executionResult?.time} sec</span>
+              <span>Runtime: {executionResult?.time} sec</span>
             )}
           </div>
         )}
@@ -34,9 +34,11 @@ export default function CodeOutput({
           <span className="text-red-500">{error}</span>
         ) : executionResult ? (
           executionResult?.stdout ? (
-            <pre>{executionResult?.stdout}</pre>
+            <pre>stdout: {executionResult?.stdout}</pre>
           ) : executionResult?.stderr ? (
-            <pre className="text-red-500">{executionResult?.stderr}</pre>
+            <pre className="text-red-500">
+              stderr: {executionResult?.stderr}
+            </pre>
           ) : (
             <span>No output.</span>
           )

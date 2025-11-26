@@ -1,86 +1,104 @@
-// TODO: implement user submission flow
 "use server";
 
 import { submitCode } from "@/lib/judge0";
 import { languages } from "@/types/editor-languages";
-import parseUserCodeForSubmission from "@/lib/code-parsers";
-import { getTestArgs } from "./get-test-args";
-import { getTestCases } from "./get-test-cases";
+import parseCodeForSubmission from "@/lib/code-parsers";
+import { getTestArgs } from "./get-test-cases";
 import { gradeSolutionOutput } from "@/lib/ai-tooling";
 
 /**
- * Grades solution comparing user's output to expected output
- * @param langId The Judge0 language ID for the submitted code
- * @param sourceCode The source code to grade
- * @param funcitonName The name of the function to be tested
+ * Grades solution via LLM comparing user's output to expected output
  * @returns Object containing:
  *  - success: Whether Judge0 endpoint returned ok
  *  - graded: Whether the code was actually graded
  *  - message: Error message if unsuccessful
  */
-export async function gradeUserCode(
-  langKey: string,
+export async function gradeSolution(
+  langKey: keyof typeof languages,
   sourceCode: string,
   functionName: string,
   indent: number,
   problemTitle: string,
-  problemDescription: string
+  problemDescription: string,
+  date?: string
 ) {
   sourceCode = sourceCode.trim();
   if (!sourceCode) {
-    return {
-      graded: false,
-      message: "Source Code is not valid"
-    };
-  }
-  // ensure sourceCode is in a supported language
-  if (!Object.keys(languages).some((key) => key === langKey)) {
-    return {
-      graded: false,
-      message: `Unrecognized language: ${langKey}`
-    };
+    return new Error("Source code is not valid");
   }
 
-  // get testArgs for the current language
-  const allTestArgs: { [key: string]: string[] } = await getTestArgs();
-  const testArgs = allTestArgs[langKey];
+  // Get test cases for the current language
+  const result = await getTestArgs(date);
+  if (result instanceof Error) {
+    return result;
+  }
+
+  // Filter by language, sort by test_case_number, and extract inputs
+  const testInputs = result
+    .filter((obj) => obj.language === langKey)
+    .sort((a, b) => a.test_case_number - b.test_case_number)
+    .map((obj) => obj.input);
 
   // pass in all 5 test cases
-  const parsedSolution = parseUserCodeForSubmission(
+  const parsedSolution = parseCodeForSubmission(
     langKey,
     sourceCode,
     functionName,
-    testArgs.slice(0, 5),
+    testInputs.slice(0, 5),
     indent
   );
+  if (parsedSolution instanceof Error) {
+    return parsedSolution;
+  }
 
   // run the code
   const res = await submitCode(parsedSolution, languages[langKey].language_id);
   if (typeof res === "string") {
     // error at judge0 endpoint
-    return { graded: false, message: res };
+    return new Error(`Error at Judge0 Endpoint: ${res}`);
   }
-  const userCodeStdOut = res.stdout;
-  if (!userCodeStdOut || userCodeStdOut === "")
+  // runtime error
+  if (res.stderr?.trim() || res.compile_output?.trim()) {
     return {
       graded: false,
-      message: "Nothing was printed to stdout!"
+      time: res.time,
+      memory: res.memory,
+      error: res.stderr,
+      stdout: res.stdout
     };
+  }
 
-  // transform stringified array of outputs into obj
-  const outputs = userCodeStdOut.trim().split("\n");
+  const userCodeStdOut = res.stdout;
+  if (userCodeStdOut === null || userCodeStdOut === "")
+    return new Error("Application Error: Nothing was printed to stdout!");
+
+  const outputs = userCodeStdOut
+    .trim()
+    .split(",")
+    .map((item) => item.trim());
   const userTestCases: Record<string, string> = {};
-  testArgs.slice(0, 5).forEach((testArg, index) => {
-    userTestCases[`testCase${index + 1}`] = outputs[index] || "";
+  testInputs.slice(0, 5).forEach((testInput, index) => {
+    userTestCases[testInput] = outputs[index] || "";
   });
 
-  const expectedTestCases = await getTestCases();
+  // Parse test cases into Record<string, string> format (input as key, expected_output as value)
+  const expectedTestCases: Record<string, string> = {};
+  result
+    .filter((obj) => obj.language === langKey)
+    .sort((a, b) => a.test_case_number - b.test_case_number)
+    .forEach((obj) => {
+      expectedTestCases[obj.input] = obj.expected_output;
+    });
+
   const grade = await gradeSolutionOutput(
     userTestCases,
     expectedTestCases,
     problemTitle,
     problemDescription
   );
+  if (grade instanceof Error) {
+    return grade;
+  }
 
   return {
     ...grade,
