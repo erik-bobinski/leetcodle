@@ -49,10 +49,7 @@ import { gradeSolution } from "@/app/actions/grade-solution";
 import type { GetProblem, UserSubmissionCode } from "@/types/database";
 import { addUserSubmission } from "@/app/actions/add-user-submission";
 import { useAuth } from "@clerk/nextjs";
-import {
-  saveLocalSubmission,
-  getLocalSubmission
-} from "@/lib/local-submissions";
+import { saveLocalSubmission } from "@/lib/local-submissions";
 
 const leetcodleTheme = createTheme({
   variant: "dark",

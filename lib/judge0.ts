@@ -2,10 +2,7 @@ import type { Judge0ExecutionResponse } from "@/types/judge0";
 import { languages } from "@/types/editor-languages";
 import parseCodeForSubmission from "@/lib/code-parsers";
 import { fixExecutableCode } from "@/lib/ai-tooling";
-import type {
-  ReferenceSolution,
-  PrerequisiteDataStructure
-} from "@/types/database";
+import type { ReferenceSolution } from "@/types/database";
 
 // Helper function to get the base URL for API calls
 function getBaseUrl(): string {
@@ -99,7 +96,7 @@ export async function generateExpectedOutputs(
     const langReturnType = returnType?.[language] || "";
 
     // Parse the code with all test inputs
-    let executableCodeResult = parseCodeForSubmission(
+    let executableCode = parseCodeForSubmission(
       language,
       solutionCode,
       functionName,
@@ -107,10 +104,9 @@ export async function generateExpectedOutputs(
       indent,
       langReturnType
     );
-    if (executableCodeResult instanceof Error) {
-      return executableCodeResult;
+    if (executableCode instanceof Error) {
+      return executableCode;
     }
-    let executableCode = executableCodeResult;
 
     // Use AI to fix extraneous runtime/compilation errors before submission
     const fixedCodeResult = await fixExecutableCode(
