@@ -435,9 +435,13 @@ export default function CodeEditor({
       ]),
       EditorView.theme({
         "&": {
-          height: "500px",
+          height: "100%",
           border: "2px solid var(--primary)",
           borderRadius: "4px"
+        },
+        ".cm-scroller": {
+          overflow: "auto",
+          height: "100%"
         },
         ".cm-content": {
           fontFamily: "var(--font-mono)",
@@ -539,7 +543,7 @@ export default function CodeEditor({
 
   if (isLoading) {
     return (
-      <div className="flex w-full flex-col gap-2">
+      <div className="flex h-full flex-col gap-2">
         <div className="mb-2 flex gap-2">
           <div
             className="shimmer h-8 w-32 rounded"
@@ -551,7 +555,7 @@ export default function CodeEditor({
           />
         </div>
         <div
-          className="shimmer h-[500px] w-full rounded border border-[#222b3c]"
+          className="shimmer min-h-0 flex-1 rounded border border-[#222b3c]"
           style={{
             backgroundColor: "#1b222c",
             boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)"
@@ -561,7 +565,7 @@ export default function CodeEditor({
     );
   } else if (error) {
     return (
-      <div className="flex w-full flex-col gap-2">
+      <div className="flex h-full flex-col gap-2">
         <div className="mb-2 flex gap-2">
           <div
             className="shimmer h-8 w-32 rounded"
@@ -573,7 +577,7 @@ export default function CodeEditor({
           />
         </div>
         <div
-          className="flex h-[500px] w-full items-center justify-center rounded border border-red-500/20 bg-[#1b222c] p-6"
+          className="flex min-h-0 flex-1 items-center justify-center rounded border border-red-500/20 bg-[#1b222c] p-6"
           style={{
             boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)"
           }}
@@ -624,9 +628,10 @@ export default function CodeEditor({
     );
   }
   return (
-    <div>
-      <div className="w-full">
-        <div className="mb-2 flex gap-2">
+    <div className="flex h-full flex-col">
+      {/* Toolbar */}
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -671,20 +676,6 @@ export default function CodeEditor({
             {isVim ? "Vim: On" : "Vim: Off"}
           </Button>
         </div>
-        <div ref={editorRef}>
-          <CodeMirror
-            key={langKey}
-            extensions={extensions}
-            value={code}
-            onChange={(value) => {
-              setCode(value);
-            }}
-            theme={leetcodleTheme}
-            tabIndex={tabSizeValue}
-          />
-        </div>
-      </div>
-      <div className="flex justify-start pt-2">
         <Button
           type="button"
           className="flex cursor-pointer items-center gap-2"
@@ -694,6 +685,24 @@ export default function CodeEditor({
           <PlayIcon className="h-5 w-5" />
           {isSubmitting ? "Running..." : "Submit"}
         </Button>
+      </div>
+
+      {/* Editor - fills remaining space */}
+      <div ref={editorRef} className="relative min-h-0 flex-1">
+        <div className="absolute inset-0">
+          <CodeMirror
+            key={langKey}
+            extensions={extensions}
+            value={code}
+            onChange={(value) => {
+              setCode(value);
+            }}
+            theme={leetcodleTheme}
+            tabIndex={tabSizeValue}
+            height="100%"
+            className="h-full"
+          />
+        </div>
       </div>
     </div>
   );

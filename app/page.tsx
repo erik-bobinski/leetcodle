@@ -1,11 +1,9 @@
 import { getProblem } from "./actions/get-problem";
-import ProblemDetails from "@/components/ProblemDetails";
 import { connection } from "next/server";
-import Playground from "@/components/Playground";
-import { WordleGrid } from "@/components/WordleGrid";
 import { getUserSubmission } from "./actions/get-user-submission";
 import type { GetProblem } from "@/types/database";
 import { LocalDateRedirect } from "@/components/LocalDateRedirect";
+import { MainLayout } from "@/components/MainLayout";
 
 export default async function Home({
   searchParams
@@ -81,21 +79,13 @@ export default async function Home({
   }
 
   return (
-    <>
-      <ProblemDetails problem={problem} />
-
-      <Playground
-        latestCode={userSubmissionResult?.userSubmissionCode}
-        template={template}
-        prerequisiteDataStructure={prerequisite_data_structure}
-        problemTitle={problem.title}
-        problemDescription={problem.description}
-        date={params.date}
-      />
-      <WordleGrid
-        initialAttempts={userSubmissionResult?.userSubmissionAttempts ?? []}
-        date={params.date}
-      />
-    </>
+    <MainLayout
+      problem={problem}
+      template={template}
+      prerequisiteDataStructure={prerequisite_data_structure}
+      latestCode={userSubmissionResult?.userSubmissionCode}
+      initialAttempts={userSubmissionResult?.userSubmissionAttempts ?? []}
+      date={params.date}
+    />
   );
 }
