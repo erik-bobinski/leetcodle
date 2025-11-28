@@ -9,6 +9,17 @@ import { ArchiveData } from "@/app/actions/get-archive-data";
 import { CheckCircle, Clock, XCircle, Circle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+/**
+ * Formats a Date object to YYYY-MM-DD string using local timezone.
+ * This ensures consistent date handling across the app.
+ */
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 // Custom DayButton component to override day content
 function CustomDayButton({
   className,
@@ -27,28 +38,46 @@ function CustomDayButton({
   function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
     e.stopPropagation();
-    const dateString = day.date.toISOString().split("T")[0];
+    const dateString = formatLocalDate(day.date);
     router.push(`/?date=${dateString}`);
   }
 
-  // Get archive data for this specific day
+  // Get archive data for this specific day using local date format
   const dayData = archiveData.find((data) => {
-    const dayDate = day.date.toISOString().split("T")[0];
+    const dayDate = formatLocalDate(day.date);
     return data.date === dayDate;
   });
 
   // Get status icon based on submission status
   const getStatusIcon = (status: string) => {
+    // Must use size-* class (not h-* w-*) to override button's default SVG sizing
+    const iconClass = "size-6";
     switch (status) {
       case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return (
+          <span title="Passed">
+            <CheckCircle className={`${iconClass} text-green-500`} />
+          </span>
+        );
       case "in_progress":
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return (
+          <span title="In Progress">
+            <Clock className={`${iconClass} text-yellow-500`} />
+          </span>
+        );
       case "failed":
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return (
+          <span title="Failed">
+            <XCircle className={`${iconClass} text-red-500`} />
+          </span>
+        );
       case "not_attempted":
       default:
-        return <Circle className="h-4 w-4 text-gray-400" />;
+        return (
+          <span title="Not Attempted">
+            <Circle className={`${iconClass} text-gray-400`} />
+          </span>
+        );
     }
   };
 
@@ -72,7 +101,9 @@ function CustomDayButton({
     return (
       <div className="flex flex-col items-center justify-center gap-1 p-1">
         <div className="text-xs font-medium">{dayNumber}</div>
-        <Circle className="h-4 w-4 text-gray-400" />
+        <span title="Not Attempted">
+          <Circle className="size-6 text-gray-400" />
+        </span>
       </div>
     );
   };
@@ -93,7 +124,7 @@ function CustomDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground data-[range-middle=true]:bg-accent data-[range-middle=true]:text-accent-foreground data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-ring/50 dark:hover:text-accent-foreground border-border m-1 flex aspect-square size-auto w-full min-w-(--cell-size) cursor-pointer flex-col gap-1 rounded-md border leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:ring-[3px] data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md [&>span]:text-xs [&>span]:opacity-70",
+        "data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground data-[range-middle=true]:bg-accent data-[range-middle=true]:text-accent-foreground data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-ring/50 dark:hover:text-accent-foreground border-border m-0.5 flex size-auto h-20 w-full min-w-(--cell-size) cursor-pointer flex-col gap-0.5 rounded-md border leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:ring-[3px] data-[range-end=true]:rounded-md data-[range-end=true]:rounded-r-md data-[range-middle=true]:rounded-none data-[range-start=true]:rounded-md data-[range-start=true]:rounded-l-md [&>span]:text-xs [&>span]:opacity-70",
         className
       )}
       {...props}
@@ -119,6 +150,10 @@ export default function Calendar18({
       className="w-full max-w-full rounded-lg border"
       buttonVariant="ghost"
       showOutsideDays={false}
+      classNames={{
+        week: "flex w-full",
+        day: "relative w-full p-0 text-center group/day select-none"
+      }}
       components={{
         DayButton: (props) => (
           <CustomDayButton {...props} archiveData={archiveData} />

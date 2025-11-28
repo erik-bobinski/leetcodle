@@ -5,6 +5,7 @@ import Playground from "@/components/Playground";
 import { WordleGrid } from "@/components/WordleGrid";
 import { getUserSubmission } from "./actions/get-user-submission";
 import type { GetProblem } from "@/types/database";
+import { LocalDateRedirect } from "@/components/LocalDateRedirect";
 
 export default async function Home({
   searchParams
@@ -13,6 +14,12 @@ export default async function Home({
 }) {
   await connection();
   const params = await searchParams;
+
+  // If no date provided, redirect to use the user's local date
+  if (!params.date) {
+    return <LocalDateRedirect />;
+  }
+
   const getProblemResult = await getProblem(params.date);
 
   if ("error" in getProblemResult) {
@@ -75,7 +82,6 @@ export default async function Home({
 
   return (
     <>
-      {/* Problem Title and Description */}
       <ProblemDetails problem={problem} />
 
       <Playground

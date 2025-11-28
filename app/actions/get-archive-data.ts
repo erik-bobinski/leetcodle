@@ -65,21 +65,25 @@ export async function getArchiveData() {
   // Get submission IDs to query related data
   const submissionIds = submissions.map((sub) => sub.id);
 
-  // Get latest attempt per submission - only need test_case_results to determine status
+  // Get latest attempt per submission - need test_case_results and attempt_number to determine status
   // This fetches only the latest attempt per submission, avoiding loading all attempts
+  // Format UUIDs as PostgreSQL array literal: '{uuid1,uuid2,...}'
+  const submissionIdsArray = `{${submissionIds.join(",")}}`;
   const { data: attemptsData, error: attemptsError } = await tryCatch(
     submissionIds.length > 0
       ? (db.execute(sql`
         SELECT DISTINCT ON (submission_id)
           submission_id::text as submission_id,
-          test_case_results::text as test_case_results
+          test_case_results::text as test_case_results,
+          attempt_number
         FROM user_submission_attempts
-        WHERE submission_id = ANY(${submissionIds}::uuid[])
+        WHERE submission_id = ANY(${submissionIdsArray}::uuid[])
         ORDER BY submission_id, attempt_number DESC
       `) as Promise<
           Array<{
             submission_id: string;
             test_case_results: string;
+            attempt_number: number;
           }>
         >)
       : Promise.resolve([])
@@ -106,14 +110,14 @@ export async function getArchiveData() {
           attempt.test_case_results
         ) as boolean[];
         const allPassed = testCaseResults.every((result) => result === true);
-        const anyPassed = testCaseResults.some((result) => result === true);
+        const usedAllAttempts = attempt.attempt_number >= 5;
 
         if (allPassed) {
           attempt_status = "completed";
-        } else if (anyPassed) {
-          attempt_status = "in_progress";
-        } else {
+        } else if (usedAllAttempts) {
           attempt_status = "failed";
+        } else {
+          attempt_status = "in_progress";
         }
       } catch {
         attempt_status = "failed";

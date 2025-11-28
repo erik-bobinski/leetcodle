@@ -54,7 +54,7 @@ export default async function Archive() {
   return (
     <div className="flex min-h-screen w-full flex-col p-4">
       {/* Navigation Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between">
         <Link
           href="/"
           className="text-foreground/70 hover:text-foreground hover:bg-accent/50 flex items-center gap-3 rounded-lg px-3 py-2 transition-all duration-200"
@@ -76,10 +76,8 @@ export default async function Archive() {
       </div>
 
       {/* Calendar Content */}
-      <div className="flex w-full flex-1 items-center justify-center">
-        <div className="flex w-full items-center justify-center">
-          <Calendar18 archiveData={archiveData} />
-        </div>
+      <div className="w-full">
+        <Calendar18 archiveData={archiveData} />
       </div>
     </div>
   );
