@@ -1,29 +1,15 @@
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { Button } from "@/components/ui/button";
 
-function getLocalTimeString(): string {
-  // Create a date object for today at 12:00 AM UTC
-  const utcMidnight = new Date();
-  utcMidnight.setUTCHours(0, 0, 0, 0);
-
-  // Convert to local time
-  const localDate = new Date(utcMidnight);
-
-  // Format the time
-  const hours = localDate.getHours();
-  const minutes = localDate.getMinutes();
-  const ampm = hours >= 12 ? "PM" : "AM";
-  const displayHours = hours % 12 || 12;
-  const displayMinutes = minutes.toString().padStart(2, "0");
-
+function getLocalTimezone(): string {
   // Get timezone abbreviation
   const timeZone = Intl.DateTimeFormat("en", {
     timeZoneName: "short"
   })
-    .formatToParts(localDate)
+    .formatToParts(new Date())
     .find((part) => part.type === "timeZoneName")?.value;
 
-  return `${displayHours}:${displayMinutes} ${ampm} ${timeZone}`;
+  return timeZone || "local time";
 }
 
 export default function HelpModal({
@@ -35,7 +21,7 @@ export default function HelpModal({
 }) {
   if (!isOpen) return null;
 
-  const localTimeString = getLocalTimeString();
+  const localTimezone = getLocalTimezone();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -73,16 +59,15 @@ export default function HelpModal({
             </h3>
             <p className="text-center leading-relaxed text-gray-700 dark:text-gray-300">
               Leetcodle is a daily coding challenge inspired by Wordle. Each day
-              you get a new programming problem to solve at 12:00AM UTC (
+              you get a new programming problem to solve at{" "}
               <span className="font-semibold text-blue-600 dark:text-blue-400">
-                {localTimeString}
+                midnight {localTimezone}
               </span>
-              ). You have five attempts to write an algorithm to solve the five
-              hidden test cases, each one you get correct will be revealed in
-              the grid. What you write is exactly what gets submitted — ensure
-              you import any libraries before using them. Check out the archive
-              to see your history of problems you&apos;ve solved, and login to
-              solve previous problems. Good luck!
+              . You have five attempts to write an algorithm to solve the five
+              hidden test cases. What you write is exactly what gets submitted —
+              ensure you import any libraries before using them. Check out the
+              archive to see your history of problems you&apos;ve solved, and
+              login to solve previous problems. Good luck!
             </p>
           </div>
           <div className="flex gap-4">

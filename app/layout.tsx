@@ -1,4 +1,5 @@
 import type { Metadata } from "next/types";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -46,7 +47,9 @@ export default function RootLayout({
         >
           <Providers>
             <div className="mx-auto px-4 py-4 md:px-6 lg:px-8">
-              <Navigation />
+              <Suspense>
+                <Navigation />
+              </Suspense>
             </div>
             {children}
           </Providers>

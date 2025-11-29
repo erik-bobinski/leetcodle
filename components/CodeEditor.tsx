@@ -87,7 +87,8 @@ export default function CodeEditor({
   problemDescription,
   onSubmissionResult,
   latestCode,
-  date
+  date,
+  isSubmitDisabled
 }: {
   template: GetProblem["template"];
   prerequisiteDataStructure: GetProblem["prerequisite_data_structure"];
@@ -104,6 +105,7 @@ export default function CodeEditor({
   }) => void;
   latestCode?: UserSubmissionCode | null;
   date?: string;
+  isSubmitDisabled?: boolean;
 }) {
   const [langKey, setLangKey] = useState<keyof typeof languages>(
     (latestCode?.language as keyof typeof languages) || "cpp"
@@ -180,14 +182,22 @@ export default function CodeEditor({
         }
       }
 
+      // Get and process prerequisite code (replace {{indent}} placeholders)
+      const prerequisiteCodeObj = prerequisiteDataStructure?.find(
+        (obj) => obj.language === langKey
+      );
+      const processedPrerequisite = prerequisiteCodeObj
+        ? prerequisiteCodeObj.data_structure_code.replace(
+            /\{\{indent\}\}/g,
+            " ".repeat(tabSize)
+          )
+        : null;
+
       // For Go, package main must be at the very top, before everything else
       if (langKey === "go") {
-        const prerequisiteCode = prerequisiteDataStructure?.find(
-          (obj) => obj.language === langKey
-        );
-        if (prerequisiteCode) {
+        if (processedPrerequisite) {
           // package main, then prerequisite, then function
-          return `package main\n\n${prerequisiteCode.data_structure_code}\n\n${processed}`;
+          return `package main\n\n${processedPrerequisite}\n\n${processed}`;
         } else {
           // Just package main, then function
           return `package main\n\n${processed}`;
@@ -195,11 +205,8 @@ export default function CodeEditor({
       }
 
       // Add prerequisiteDataStructure at the very top (after JSDoc if present)
-      const prerequisiteCode = prerequisiteDataStructure?.find(
-        (obj) => obj.language === langKey
-      );
-      if (prerequisiteCode) {
-        processed = `${prerequisiteCode.data_structure_code}\n\n${processed}`;
+      if (processedPrerequisite) {
+        processed = `${processedPrerequisite}\n\n${processed}`;
       }
 
       return processed;
@@ -544,11 +551,17 @@ export default function CodeEditor({
   if (isLoading) {
     return (
       <div className="flex h-full flex-col gap-2">
-        <div className="mb-2 flex gap-2">
-          <div
-            className="shimmer h-8 w-32 rounded"
-            style={{ backgroundColor: "#1b222c" }}
-          />
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="flex gap-2">
+            <div
+              className="shimmer h-8 w-32 rounded"
+              style={{ backgroundColor: "#1b222c" }}
+            />
+            <div
+              className="shimmer h-8 w-24 rounded"
+              style={{ backgroundColor: "#1b222c" }}
+            />
+          </div>
           <div
             className="shimmer h-8 w-24 rounded"
             style={{ backgroundColor: "#1b222c" }}
@@ -566,11 +579,17 @@ export default function CodeEditor({
   } else if (error) {
     return (
       <div className="flex h-full flex-col gap-2">
-        <div className="mb-2 flex gap-2">
-          <div
-            className="shimmer h-8 w-32 rounded"
-            style={{ backgroundColor: "#1b222c" }}
-          />
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="flex gap-2">
+            <div
+              className="shimmer h-8 w-32 rounded"
+              style={{ backgroundColor: "#1b222c" }}
+            />
+            <div
+              className="shimmer h-8 w-24 rounded"
+              style={{ backgroundColor: "#1b222c" }}
+            />
+          </div>
           <div
             className="shimmer h-8 w-24 rounded"
             style={{ backgroundColor: "#1b222c" }}
@@ -680,10 +699,14 @@ export default function CodeEditor({
           type="button"
           className="flex cursor-pointer items-center gap-2"
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isSubmitDisabled}
         >
           <PlayIcon className="h-5 w-5" />
-          {isSubmitting ? "Running..." : "Submit"}
+          {isSubmitDisabled
+            ? "No Attempts Left"
+            : isSubmitting
+              ? "Running..."
+              : "Submit"}
         </Button>
       </div>
 

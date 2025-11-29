@@ -2,19 +2,14 @@
 
 import ReactMarkdown from "react-markdown";
 import type { GetProblem } from "@/types/database";
-import { WordleGrid } from "@/components/WordleGrid";
+import { Wordle } from "@/components/Wordle";
 
 interface ProblemPanelProps {
   problem: GetProblem;
-  initialAttempts: boolean[][];
-  date: string;
+  attempts: boolean[][];
 }
 
-export default function ProblemPanel({
-  problem,
-  initialAttempts,
-  date
-}: ProblemPanelProps) {
+export default function ProblemPanel({ problem, attempts }: ProblemPanelProps) {
   return (
     <div className="flex h-full flex-col overflow-y-auto p-4">
       {/* Problem Title */}
@@ -52,7 +47,7 @@ export default function ProblemPanel({
       {/* Wordle Grid */}
       <div>
         <h2 className="mb-3 text-lg font-semibold">Your Progress:</h2>
-        <WordleGrid initialAttempts={initialAttempts} date={date} />
+        <Wordle attempts={attempts} />
       </div>
     </div>
   );

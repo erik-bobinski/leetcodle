@@ -13,6 +13,7 @@ interface EditorPanelProps {
   problemDescription: GetProblem["description"];
   latestCode?: UserSubmissionCode | null;
   date?: string;
+  isSubmitDisabled?: boolean;
 }
 
 export default function EditorPanel({
@@ -21,7 +22,8 @@ export default function EditorPanel({
   problemTitle,
   problemDescription,
   latestCode,
-  date
+  date,
+  isSubmitDisabled
 }: EditorPanelProps) {
   const [executionResult, setExecutionResult] = useState<{
     stdout: string | null;
@@ -54,6 +56,7 @@ export default function EditorPanel({
           }}
           latestCode={latestCode}
           date={date}
+          isSubmitDisabled={isSubmitDisabled}
         />
       </div>
 
