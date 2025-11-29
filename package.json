@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@ai-sdk/google": "2.0.0-beta.19",
@@ -50,6 +51,7 @@
     "react-day-picker": "^9.9.0",
     "react-dom": "19.2.0",
     "react-markdown": "^10.1.0",
+    "react-resizable-panels": "^3.0.6",
     "react-scan": "^0.4.3",
     "svix": "^1.67.0",
     "tailwind-merge": "^3.3.1",

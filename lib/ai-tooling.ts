@@ -59,7 +59,7 @@ export async function generateProblemDetails() {
     frequently used in these ${recentProblemTitles.length} previous problems (i.e. don't create a problem that revolves around a
     string input if they are common in these problems): ${recentProblemTitles.join(", ")}.`
         : "This is a new problem database, so there are no previous problems to avoid duplicating."
-    } Create a tree problem for today.`,
+    }`,
       temperature: 1.8
     })
   );

@@ -42,7 +42,7 @@ export function Wordle({ attempts }: { attempts: boolean[][] }) {
 
     return (
       <div
-        className="box-border flex aspect-square h-full w-full items-center justify-center rounded-md border text-2xl font-bold"
+        className="box-border flex aspect-square h-full w-full items-center justify-center rounded-md border text-xl font-bold"
         style={{
           userSelect: "none",
           ...getSquareStyles()
@@ -54,13 +54,13 @@ export function Wordle({ attempts }: { attempts: boolean[][] }) {
   }
 
   return (
-    <div className="flex w-full justify-center">
+    <div className="flex justify-center">
       {/* 6 x 6 Grid */}
-      <div className="grid w-full max-w-xs grid-cols-6 grid-rows-6 gap-2">
+      <div className="grid w-full max-w-sm grid-cols-6 grid-rows-6 gap-2">
         {/* Row 0 Cell 0: Top-left empty cell */}
         <div></div>
         {/* Row 0 Cells 1-5: Test Cases Axis, spans remaining 5 squares */}
-        <div className="col-span-5 -mb-4 flex items-center justify-center text-sm font-medium select-none">
+        <div className="col-span-5 -mb-2 flex items-center justify-center text-sm font-medium select-none">
           Test Cases
           <ArrowRightIcon className="ml-1" />
         </div>
@@ -74,7 +74,7 @@ export function Wordle({ attempts }: { attempts: boolean[][] }) {
               className="flex items-center justify-center text-sm font-medium select-none"
             >
               {rowIdx === 2 ? (
-                <span className="flex rotate-90 items-center">
+                <span className="flex rotate-90 items-center whitespace-nowrap">
                   Attempts
                   <ArrowRightIcon className="ml-1" />
                 </span>
