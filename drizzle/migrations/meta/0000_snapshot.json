@@ -78,12 +78,8 @@
           "name": "prerequisite_data_structures_problem_id_problems_id_fk",
           "tableFrom": "prerequisite_data_structures",
           "tableTo": "problems",
-          "columnsFrom": [
-            "problem_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["problem_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -93,10 +89,7 @@
         "prerequisite_data_structures_problem_language_unique": {
           "name": "prerequisite_data_structures_problem_language_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "problem_id",
-            "language"
-          ]
+          "columns": ["problem_id", "language"]
         }
       },
       "policies": {},
@@ -211,9 +204,7 @@
         "problems_problem_number_unique": {
           "name": "problems_problem_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "problem_number"
-          ]
+          "columns": ["problem_number"]
         }
       },
       "policies": {},
@@ -299,12 +290,8 @@
           "name": "template_args_template_id_templates_id_fk",
           "tableFrom": "template_args",
           "tableTo": "templates",
-          "columnsFrom": [
-            "template_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["template_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -314,10 +301,7 @@
         "template_args_template_language_unique": {
           "name": "template_args_template_language_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "template_id",
-            "language"
-          ]
+          "columns": ["template_id", "language"]
         }
       },
       "policies": {},
@@ -389,12 +373,8 @@
           "name": "templates_problem_id_problems_id_fk",
           "tableFrom": "templates",
           "tableTo": "problems",
-          "columnsFrom": [
-            "problem_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["problem_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -404,9 +384,7 @@
         "templates_problem_id_unique": {
           "name": "templates_problem_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "problem_id"
-          ]
+          "columns": ["problem_id"]
         }
       },
       "policies": {},
@@ -478,12 +456,8 @@
           "name": "test_cases_problem_id_problems_id_fk",
           "tableFrom": "test_cases",
           "tableTo": "problems",
-          "columnsFrom": [
-            "problem_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["problem_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -493,10 +467,7 @@
         "test_cases_problem_number_unique": {
           "name": "test_cases_problem_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "problem_id",
-            "test_case_number"
-          ]
+          "columns": ["problem_id", "test_case_number"]
         }
       },
       "policies": {},
@@ -577,12 +548,8 @@
           "name": "user_submission_attempts_submission_id_user_submissions_id_fk",
           "tableFrom": "user_submission_attempts",
           "tableTo": "user_submissions",
-          "columnsFrom": [
-            "submission_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["submission_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -674,12 +641,8 @@
           "name": "user_submission_code_submission_id_user_submissions_id_fk",
           "tableFrom": "user_submission_code",
           "tableTo": "user_submissions",
-          "columnsFrom": [
-            "submission_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["submission_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -689,10 +652,7 @@
         "user_submission_code_submission_language_unique": {
           "name": "user_submission_code_submission_language_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "submission_id",
-            "language"
-          ]
+          "columns": ["submission_id", "language"]
         }
       },
       "policies": {},
@@ -774,12 +734,8 @@
           "name": "user_submissions_user_id_users_user_id_fk",
           "tableFrom": "user_submissions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["user_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -787,12 +743,8 @@
           "name": "user_submissions_problem_id_problems_id_fk",
           "tableFrom": "user_submissions",
           "tableTo": "problems",
-          "columnsFrom": [
-            "problem_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["problem_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -802,10 +754,7 @@
         "user_submissions_user_problem_unique": {
           "name": "user_submissions_user_problem_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id",
-            "problem_id"
-          ]
+          "columns": ["user_id", "problem_id"]
         }
       },
       "policies": {},
