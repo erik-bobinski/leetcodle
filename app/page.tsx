@@ -1,3 +1,5 @@
+// TODO: disable submit button when problem when problem is completed
+
 import { getProblem } from "./actions/get-problem";
 import { connection } from "next/server";
 import { getUserSubmission } from "./actions/get-user-submission";
@@ -13,6 +15,7 @@ export default async function Home({
   await connection();
   const params = await searchParams;
 
+  // TODO: move off redirect strategy -> having current date in URL keeps user there even if clock moves passed 12am in their session and they refresh
   // If no date provided, redirect to use the user's local date
   if (!params.date) {
     return <LocalDateRedirect />;

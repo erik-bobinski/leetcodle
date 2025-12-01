@@ -1,3 +1,5 @@
+// TODO: Include a reset button that sets current code back to the boilerplate for current language
+
 import { createTheme } from "thememirror";
 import { tags as t } from "@lezer/highlight";
 import { EditorState } from "@codemirror/state";
