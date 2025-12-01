@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
+import {
   GearIcon,
   PinRightIcon,
   ClockIcon,
@@ -68,57 +73,82 @@ export default function Navigation() {
         </div>
         <div className="flex flex-row items-center gap-4">
           {isViewingPastDate && (
-            <Link href="/">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="/">
+                  <Button
+                    variant="outline"
+                    className="h-9 gap-2 hover:cursor-pointer"
+                  >
+                    <HomeIcon className="h-4 w-4" />
+                    <span>Today</span>
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>Go to today&apos;s problem</TooltipContent>
+            </Tooltip>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
                 variant="outline"
-                className="h-9 gap-2 hover:cursor-pointer"
+                size="icon"
+                className="h-9 w-9 hover:cursor-pointer"
+                onClick={() => setIsHelpModalOpen(true)}
               >
-                <HomeIcon className="h-4 w-4" />
-                <span>Today</span>
+                <QuestionMarkCircledIcon className="h-5 w-5" />
+                <span className="sr-only">Help</span>
               </Button>
-            </Link>
-          )}
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 hover:cursor-pointer"
-            onClick={() => setIsHelpModalOpen(true)}
-          >
-            <QuestionMarkCircledIcon className="h-5 w-5" />
-            <span className="sr-only">Help</span>
-          </Button>
-          <Link href="/archive">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 hover:cursor-pointer"
-            >
-              <ClockIcon className="h-5 w-5" />
-              <span className="sr-only">Archive</span>
-            </Button>
-          </Link>
-          <Link href="/settings">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 hover:cursor-pointer"
-            >
-              <GearIcon className="h-5 w-5" />
-              <span className="sr-only">Settings</span>
-            </Button>
-          </Link>
+            </TooltipTrigger>
+            <TooltipContent>How to play</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href="/archive">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 hover:cursor-pointer"
+                >
+                  <ClockIcon className="h-5 w-5" />
+                  <span className="sr-only">Archive</span>
+                </Button>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>View past problems</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href="/settings">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 hover:cursor-pointer"
+                >
+                  <GearIcon className="h-5 w-5" />
+                  <span className="sr-only">Settings</span>
+                </Button>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>Editor settings</TooltipContent>
+          </Tooltip>
           <ModeToggle />
           {!isLoaded ? (
             <ShimmerCircle />
           ) : isSignedIn ? (
             <UserButton fallback={<ShimmerCircle />} />
           ) : (
-            <SignInButton mode="modal">
-              <Button className="hover:cursor-pointer">
-                Sign In
-                <PinRightIcon className="h-4 w-4" />
-              </Button>
-            </SignInButton>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SignInButton mode="modal">
+                  <Button className="hover:cursor-pointer">
+                    Sign In
+                    <PinRightIcon className="h-4 w-4" />
+                  </Button>
+                </SignInButton>
+              </TooltipTrigger>
+              <TooltipContent>Sign in to save progress</TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>

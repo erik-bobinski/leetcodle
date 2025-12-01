@@ -14,6 +14,7 @@ interface EditorPanelProps {
   latestCode?: UserSubmissionCode | null;
   date?: string;
   isSubmitDisabled?: boolean;
+  isCompleted?: boolean;
 }
 
 export default function EditorPanel({
@@ -23,7 +24,8 @@ export default function EditorPanel({
   problemDescription,
   latestCode,
   date,
-  isSubmitDisabled
+  isSubmitDisabled,
+  isCompleted
 }: EditorPanelProps) {
   const [executionResult, setExecutionResult] = useState<{
     stdout: string | null;
@@ -57,6 +59,7 @@ export default function EditorPanel({
           latestCode={latestCode}
           date={date}
           isSubmitDisabled={isSubmitDisabled}
+          isCompleted={isCompleted}
         />
       </div>
 

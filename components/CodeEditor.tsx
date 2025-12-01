@@ -1,5 +1,3 @@
-// TODO: Include a reset button that sets current code back to the boilerplate for current language
-
 import { createTheme } from "thememirror";
 import { tags as t } from "@lezer/highlight";
 import { EditorState } from "@codemirror/state";
@@ -39,13 +37,18 @@ import { tryCatch } from "@/lib/try-catch";
 import CodeMirror from "@uiw/react-codemirror";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { PlayIcon } from "@radix-ui/react-icons";
+import { PlayIcon, ResetIcon } from "@radix-ui/react-icons";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 import { gradeSolution } from "@/app/actions/grade-solution";
 import type { GetProblem, UserSubmissionCode } from "@/types/database";
@@ -90,7 +93,8 @@ export default function CodeEditor({
   onSubmissionResult,
   latestCode,
   date,
-  isSubmitDisabled
+  isSubmitDisabled,
+  isCompleted
 }: {
   template: GetProblem["template"];
   prerequisiteDataStructure: GetProblem["prerequisite_data_structure"];
@@ -108,6 +112,7 @@ export default function CodeEditor({
   latestCode?: UserSubmissionCode | null;
   date?: string;
   isSubmitDisabled?: boolean;
+  isCompleted?: boolean;
 }) {
   const [langKey, setLangKey] = useState<keyof typeof languages>(
     (latestCode?.language as keyof typeof languages) || "cpp"
@@ -653,63 +658,106 @@ export default function CodeEditor({
       {/* Toolbar */}
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex w-56 cursor-pointer items-center rounded border"
+                  >
+                    <span className="flex-grow text-left">
+                      {languages[langKey]?.name} ({languages[langKey]?.version})
+                    </span>
+                    <ChevronDownIcon className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  {Object.entries(languages).map(([key, lang]) => (
+                    <DropdownMenuItem
+                      key={key}
+                      onClick={() =>
+                        handleLanguageChange(key as keyof typeof languages)
+                      }
+                      className="cursor-pointer"
+                    >
+                      {lang.name} ({lang.version})
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TooltipTrigger>
+            <TooltipContent>Select programming language</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
                 variant="outline"
-                className="flex w-56 cursor-pointer items-center rounded border"
-              >
-                <span className="flex-grow text-left">
-                  {languages[langKey]?.name} ({languages[langKey]?.version})
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              {Object.entries(languages).map(([key, lang]) => (
-                <DropdownMenuItem
-                  key={key}
-                  onClick={() =>
-                    handleLanguageChange(key as keyof typeof languages)
+                onClick={() => {
+                  setIsVim(!isVim);
+                  // Focus the editor after toggling Vim mode
+                  const editorElement = editorRef.current?.querySelector(
+                    ".cm-content"
+                  ) as HTMLElement;
+                  if (editorElement) {
+                    editorElement.focus();
                   }
-                  className="cursor-pointer"
-                >
-                  {lang.name} ({lang.version})
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setIsVim(!isVim);
-              // Focus the editor after toggling Vim mode
-              const editorElement = editorRef.current?.querySelector(
-                ".cm-content"
-              ) as HTMLElement;
-              if (editorElement) {
-                editorElement.focus();
-              }
-            }}
-            data-slot="dropdown-menu-trigger"
-            className="cursor-pointer"
-          >
-            {isVim ? "Vim: On" : "Vim: Off"}
-          </Button>
+                }}
+                className="cursor-pointer"
+              >
+                {isVim ? "Vim: On" : "Vim: Off"}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Toggle Vim keybindings</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const boilerplate = processBoilerplate(
+                    languages[langKey].boilerplate,
+                    tabSizeValue,
+                    template ?? undefined
+                  );
+                  setCode(boilerplate);
+                  // Clear the saved code for this language so it doesn't restore old code
+                  codePerLanguageRef.current.delete(langKey);
+                }}
+                className="cursor-pointer"
+              >
+                <ResetIcon className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Reset to starter code</TooltipContent>
+          </Tooltip>
         </div>
-        <Button
-          type="button"
-          className="flex cursor-pointer items-center gap-2"
-          onClick={handleSubmit}
-          disabled={isSubmitting || isSubmitDisabled}
-        >
-          <PlayIcon className="h-5 w-5" />
-          {isSubmitDisabled
-            ? "No Attempts Left"
-            : isSubmitting
-              ? "Running..."
-              : "Submit"}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              className="flex cursor-pointer items-center gap-2"
+              onClick={handleSubmit}
+              disabled={isSubmitting || isSubmitDisabled}
+            >
+              <PlayIcon className="h-5 w-5" />
+              {isCompleted
+                ? "Completed"
+                : isSubmitDisabled
+                  ? "No Attempts Left"
+                  : isSubmitting
+                    ? "Running..."
+                    : "Submit"}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {isCompleted
+              ? "Problem already solved"
+              : isSubmitDisabled
+                ? "No attempts remaining"
+                : "Run and grade your solution"}
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Editor - fills remaining space */}

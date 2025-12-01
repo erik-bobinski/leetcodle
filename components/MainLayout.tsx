@@ -13,6 +13,8 @@ import { getUserSubmission } from "@/app/actions/get-user-submission";
 import { getLocalSubmission } from "@/lib/local-submissions";
 import { useAuth } from "@clerk/nextjs";
 
+const MAX_ATTEMPTS = 5;
+
 interface MainLayoutProps {
   problem: GetProblem;
   template: GetProblem["template"];
@@ -21,8 +23,6 @@ interface MainLayoutProps {
   initialAttempts: boolean[][];
   date: string;
 }
-
-const MAX_ATTEMPTS = 5;
 
 export function MainLayout({
   problem,
@@ -37,6 +37,12 @@ export function MainLayout({
 
   // Check if user has used all attempts
   const hasMaxAttempts = attempts.length >= MAX_ATTEMPTS;
+
+  // Check if problem is completed (all test cases passed in any attempt)
+  const isCompleted = attempts.some(
+    (attempt) =>
+      attempt.length > 0 && attempt.every((result) => result === true)
+  );
 
   // Refresh attempts from the server or localStorage
   const refreshAttempts = useCallback(async () => {
@@ -92,7 +98,8 @@ export function MainLayout({
             problemDescription={problem.description}
             latestCode={latestCode}
             date={date}
-            isSubmitDisabled={hasMaxAttempts}
+            isSubmitDisabled={hasMaxAttempts || isCompleted}
+            isCompleted={isCompleted}
           />
         </ResizablePanel>
       </ResizablePanelGroup>

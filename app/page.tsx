@@ -1,5 +1,3 @@
-// TODO: disable submit button when problem when problem is completed
-
 import { getProblem } from "./actions/get-problem";
 import { connection } from "next/server";
 import { getUserSubmission } from "./actions/get-user-submission";
