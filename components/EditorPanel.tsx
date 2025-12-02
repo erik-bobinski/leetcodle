@@ -102,7 +102,7 @@ export default function EditorPanel({
             {/* Console Header */}
             <button
               onClick={toggleConsole}
-              className="hover:bg-accent/50 flex w-full cursor-pointer items-center justify-between px-4 py-2 transition-colors"
+              className="hover:bg-accent/50 flex w-full cursor-pointer items-center gap-1 px-4 py-2 transition-colors"
             >
               <span className="text-sm font-medium">Console</span>
               {isConsoleCollapsed ? (
