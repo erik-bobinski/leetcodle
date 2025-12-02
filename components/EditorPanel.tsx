@@ -6,7 +6,7 @@ import {
   ResizablePanelGroup
 } from "@/components/ui/resizable";
 import { GetProblem, UserSubmissionCode } from "@/types/database";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { ImperativePanelHandle } from "react-resizable-panels";
 
@@ -41,7 +41,12 @@ export default function EditorPanel({
   const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(true);
   const consolePanelRef = useRef<ImperativePanelHandle>(null);
 
-  const toggleConsole = () => {
+  // Collapse console on mount to match initial state
+  useEffect(() => {
+    consolePanelRef.current?.collapse();
+  }, []);
+
+  function toggleConsole() {
     const panel = consolePanelRef.current;
     if (panel) {
       if (panel.isCollapsed()) {
@@ -50,7 +55,7 @@ export default function EditorPanel({
         panel.collapse();
       }
     }
-  };
+  }
 
   return (
     <div className="relative flex h-full flex-col">

@@ -13,8 +13,7 @@ export default async function Home({
   await connection();
   const params = await searchParams;
 
-  // TODO: move off redirect strategy -> having current date in URL keeps user there even if clock moves passed 12am in their session and they refresh
-  // If no date provided, redirect to use the user's local date
+  // If no date provided, use client component to get browser's local date
   if (!params.date) {
     return <LocalDateRedirect />;
   }
