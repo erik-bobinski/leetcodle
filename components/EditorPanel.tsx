@@ -1,10 +1,14 @@
-"use client";
-
 import CodeEditor from "@/components/CodeEditor";
 import CodeOutput from "@/components/CodeOutput";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup
+} from "@/components/ui/resizable";
 import { GetProblem, UserSubmissionCode } from "@/types/database";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import type { ImperativePanelHandle } from "react-resizable-panels";
 
 interface EditorPanelProps {
   template: GetProblem["template"];
@@ -34,57 +38,98 @@ export default function EditorPanel({
     memory?: number;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isOutputOpen, setIsOutputOpen] = useState(false);
+  const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(true);
+  const consolePanelRef = useRef<ImperativePanelHandle>(null);
+
+  const toggleConsole = () => {
+    const panel = consolePanelRef.current;
+    if (panel) {
+      if (panel.isCollapsed()) {
+        panel.expand();
+      } else {
+        panel.collapse();
+      }
+    }
+  };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* Code Editor - takes remaining space */}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pt-2 pb-2">
-        <CodeEditor
-          template={template}
-          prerequisiteDataStructure={prerequisiteDataStructure}
-          problemTitle={problemTitle}
-          problemDescription={problemDescription}
-          onSubmissionResult={(result) => {
-            setError(result.error ?? null);
-            setExecutionResult({
-              stdout: result.stdout ?? null,
-              stderr: result.error ?? null,
-              time: result.time,
-              memory: result.memory
-            });
-            // Auto-open output when there's a result
-            setIsOutputOpen(true);
-          }}
-          latestCode={latestCode}
-          date={date}
-          isSubmitDisabled={isSubmitDisabled}
-          isCompleted={isCompleted}
-        />
-      </div>
+    <div className="relative flex h-full flex-col">
+      <ResizablePanelGroup direction="vertical" className="min-h-0 flex-1">
+        {/* Code Editor Panel */}
+        <ResizablePanel defaultSize={75} minSize={30}>
+          <div className="flex h-full flex-col overflow-hidden px-4 pt-2 pb-2">
+            <CodeEditor
+              template={template}
+              prerequisiteDataStructure={prerequisiteDataStructure}
+              problemTitle={problemTitle}
+              problemDescription={problemDescription}
+              onSubmissionResult={(result) => {
+                setError(result.error ?? null);
+                setExecutionResult({
+                  stdout: result.stdout ?? null,
+                  stderr: result.error ?? null,
+                  time: result.time,
+                  memory: result.memory
+                });
+                // Auto-expand console when there's a result
+                if (consolePanelRef.current?.isCollapsed()) {
+                  consolePanelRef.current.expand();
+                }
+              }}
+              latestCode={latestCode}
+              date={date}
+              isSubmitDisabled={isSubmitDisabled}
+              isCompleted={isCompleted}
+            />
+          </div>
+        </ResizablePanel>
 
-      {/* Collapsible Output Section */}
-      <div className="border-t border-zinc-700">
-        {/* Toggle Header */}
+        {/* Resize Handle */}
+        <ResizableHandle withHandle />
+
+        {/* Console Panel */}
+        <ResizablePanel
+          ref={consolePanelRef}
+          defaultSize={25}
+          minSize={10}
+          maxSize={60}
+          collapsible
+          collapsedSize={0}
+          onCollapse={() => setIsConsoleCollapsed(true)}
+          onExpand={() => setIsConsoleCollapsed(false)}
+        >
+          <div className="flex h-full flex-col overflow-hidden border-t border-zinc-700">
+            {/* Console Header */}
+            <button
+              onClick={toggleConsole}
+              className="hover:bg-accent/50 flex w-full cursor-pointer items-center justify-between px-4 py-2 transition-colors"
+            >
+              <span className="text-sm font-medium">Console</span>
+              {isConsoleCollapsed ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </button>
+
+            {/* Console Content */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+              <CodeOutput executionResult={executionResult} error={error} />
+            </div>
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+
+      {/* Collapsed Console Bar - shown when console is collapsed */}
+      {isConsoleCollapsed && (
         <button
-          onClick={() => setIsOutputOpen(!isOutputOpen)}
-          className="hover:bg-accent/50 flex w-full cursor-pointer items-center justify-between px-4 py-2 transition-colors"
+          onClick={toggleConsole}
+          className="hover:bg-accent/50 flex w-full cursor-pointer items-center gap-1 border-t border-zinc-700 px-4 py-2 transition-colors"
         >
           <span className="text-sm font-medium">Console</span>
-          {isOutputOpen ? (
-            <ChevronDown className="h-4 w-4" />
-          ) : (
-            <ChevronUp className="h-4 w-4" />
-          )}
+          <ChevronUp className="h-4 w-4" />
         </button>
-
-        {/* Collapsible Content */}
-        {isOutputOpen && (
-          <div className="max-h-48 overflow-y-auto px-4 pb-4">
-            <CodeOutput executionResult={executionResult} error={error} />
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
