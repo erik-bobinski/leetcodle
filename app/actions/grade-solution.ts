@@ -20,7 +20,8 @@ export async function gradeSolution(
   indent: number,
   problemTitle: string,
   problemDescription: string,
-  date?: string
+  date?: string,
+  returnType?: string
 ) {
   sourceCode = sourceCode.trim();
   if (!sourceCode) {
@@ -45,7 +46,8 @@ export async function gradeSolution(
     sourceCode,
     functionName,
     testInputs.slice(0, 5),
-    indent
+    indent,
+    returnType
   );
   if (parsedSolution instanceof Error) {
     return parsedSolution;
@@ -74,7 +76,7 @@ export async function gradeSolution(
 
   const outputs = userCodeStdOut
     .trim()
-    .split(",")
+    .split(" | ")
     .map((item) => item.trim());
   const userTestCases: Record<string, string> = {};
   testInputs.slice(0, 5).forEach((testInput, index) => {

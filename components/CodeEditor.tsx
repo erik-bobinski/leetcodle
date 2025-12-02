@@ -1,3 +1,5 @@
+// TODO: save the current state of the code editor in localStorage with a debouce to avoid progress loss?
+
 import { createTheme } from "thememirror";
 import { tags as t } from "@lezer/highlight";
 import { EditorState } from "@codemirror/state";
@@ -221,7 +223,7 @@ export default function CodeEditor({
     [langKey, prerequisiteDataStructure]
   );
   const [isVim, setIsVim] = useState(false);
-  const [tabSizeValue, setTabSizeValue] = useState(2);
+  const [tabSizeValue, setTabSizeValue] = useState(2); // TODO: set default to 4
 
   // Initialize code: use latestCode if it exists and matches the current language, otherwise use boilerplate
   const [code, setCode] = useState(() => {
@@ -501,7 +503,8 @@ export default function CodeEditor({
       tabSizeValue,
       problemTitle,
       problemDescription,
-      date
+      date,
+      template?.typed_args?.[langKey]?.return_type
     );
     if (grade instanceof Error) {
       alert(grade);

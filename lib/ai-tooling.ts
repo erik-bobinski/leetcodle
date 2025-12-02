@@ -42,7 +42,7 @@ export async function generateProblemDetails() {
   // Generate basic problem details (title, description, example_input, example_output)
   const { data: basicData, error: basicError } = await tryCatch(
     generateObject({
-      model: google("gemini-2.5-pro"),
+      model: google("gemini-3-pro-preview"),
       schema: problemDetailsBasicSchema,
       system:
         "You are creating a daily coding problem in the style of leetcode with easy to medium difficulty.",
@@ -58,8 +58,8 @@ export async function generateProblemDetails() {
         ? `Ensure you do not generate a problem that has a similar description or uses data structures
     frequently used in these ${recentProblemTitles.length} previous problems (i.e. don't create a problem that revolves around a
     string input if they are common in these problems): ${recentProblemTitles.join(", ")}.`
-        : "This is a new problem database, so there are no previous problems to avoid duplicating."
-    }`,
+        : "This is a new problem database, so there are no previous problems to avoid duplicating"
+    } For today, generate a problem that requires the user to return a linked list.`,
       temperature: 1.8
     })
   );
@@ -77,7 +77,7 @@ export async function generateProblemDetails() {
   // Generate template details (functionName, argNames, typedArgs, returnType, jsDocString)
   const { data: templateData, error: templateError } = await tryCatch(
     generateObject({
-      model: google("gemini-2.5-pro"),
+      model: google("gemini-3-pro-preview"),
       schema: problemDetailsTemplateSchema,
       system:
         "You are creating a daily coding problem in the style of leetcode with easy to medium difficulty.",
@@ -98,6 +98,8 @@ export async function generateProblemDetails() {
     use "TreeNode* flatten(TreeNode* root)" that returns the flattened tree.
 
     For any generated field that depends on the programming language's syntax, ensure it is correct.
+
+    For today create a problem that requires a linked list to be returned
 
     Generate those instructions for these languages: ${(
       Object.keys(languages) as Array<keyof typeof languages>
@@ -136,7 +138,7 @@ export async function generateReferenceSolution(
 ) {
   const { data, error } = await tryCatch(
     generateObject({
-      model: google("gemini-2.5-pro"),
+      model: google("gemini-3-pro-preview"),
       schema: referenceSolutionSchema,
       system:
         "You are generating reference solutions for a programming problem in an online coding platform.",
@@ -207,7 +209,7 @@ export async function generatePrerequisiteDataStructure(
 ) {
   const { data, error } = await tryCatch(
     generateObject({
-      model: google("gemini-2.5-pro"),
+      model: google("gemini-3-pro-preview"),
       schema: prerequisiteDataStructureSchema,
       system:
         "You are helping create a daily coding problem in the style of leetcode. You will create some parameters of the problem to be stored in a database.",
@@ -229,15 +231,21 @@ export async function generatePrerequisiteDataStructure(
       - Wrap the entire definition in a single code block for each language.
       - Java: CRITICAL - Do NOT use the \`public\` keyword for the class. Use package-private (no access modifier) so it can be in the same file as the Main class. Java only allows one public class per file, and the file name must match the public class name.
       
-      CRITICAL: You MUST include a string representation method for each data structure so that when printed, it displays a readable format instead of a memory address. The method should show the constructor-style representation (e.g., "TreeNode(6)" or "ListNode(1)"). Implement the appropriate method for each language:
-      - Python: Include \`__repr__\` method that returns a string like "TreeNode(6)" or "ListNode(1)". For TreeNode, show the value: "TreeNode({self.val})". For ListNode, show the value: "ListNode({self.val})".
-      - JavaScript/TypeScript: Include a \`toString()\` method that returns a string like "TreeNode(6)" or "ListNode(1)".
-      - Java: Include a \`toString()\` method that returns a string like "TreeNode(6)" or "ListNode(1)". The class must be package-private (no \`public\` keyword).
-      - C++: Include an \`operator<<\` overload or a \`toString()\` method. For simplicity, you can use a \`toString()\` method that returns std::string.
-      - Go: Include a \`String()\` method that returns a string like "TreeNode(6)" or "ListNode(1)".
-      - Rust: Include a \`Display\` trait implementation using \`fmt::Display\` that formats as "TreeNode(6)" or "ListNode(1)".
+      CRITICAL: You MUST include a string representation method for each data structure that TRAVERSES AND PRINTS THE ENTIRE STRUCTURE IF the problem requires the solution to return the entire structure (or the head of the structure), not just the current node. This is essential for grading solutions that return the head of a list or root of a tree.
+      
+      For ListNode: The toString/repr method must traverse the entire linked list via the \`next\` pointer and return a string like "[1,2,3,4]" showing all values in order.
+      For TreeNode: The toString/repr method must do a level-order (BFS) traversal and return a string like "[1,2,3,null,4,5]" showing all values including nulls for missing children (trim trailing nulls).
+      For any other custom data structure: infer how to implement the toString method
+      
+      Implement the appropriate method for each language:
+      - Python: Include \`__repr__\` method that traverses and returns the full structure as a list string.
+      - JavaScript/TypeScript: Include a \`toString()\` method that traverses and returns the full structure.
+      - Java: Include a \`toString()\` method that traverses and returns the full structure. The class must be package-private (no \`public\` keyword).
+      - C++: Include a \`toString()\` method that returns std::string with the full structure. Include \`#include <string>\` and \`#include <queue>\` (for TreeNode) in the struct definition if needed.
+      - Go: Include a \`String()\` method that traverses and returns the full structure. CRITICAL: The method MUST handle nil receiver and return "null" if the receiver is nil.
+      - Rust: Include a \`Display\` trait implementation that traverses and formats the full structure.
 
-      Examples of acceptable outputs (Python):
+      Examples of acceptable outputs (Python ListNode):
       \"\"\"
       class ListNode:
           def __init__(self, val: int = 0, next: 'ListNode | None' = None):
@@ -245,11 +253,18 @@ export async function generatePrerequisiteDataStructure(
               self.next = next
           
           def __repr__(self):
-              return f"ListNode({self.val})"
+              result = []
+              node = self
+              while node:
+                  result.append(str(node.val))
+                  node = node.next
+              return "[" + ",".join(result) + "]"
       \"\"\"
       
-      Example for Java (note: NO public keyword):
+      Example for Java TreeNode (note: NO public keyword):
       \"\"\"
+      import java.util.*;
+      
       class TreeNode {
           int val;
           TreeNode left;
@@ -263,8 +278,69 @@ export async function generatePrerequisiteDataStructure(
           }
           @Override
           public String toString() {
-              return "TreeNode(" + this.val + ")";
+              List<String> result = new ArrayList<>();
+              Queue<TreeNode> queue = new LinkedList<>();
+              queue.offer(this);
+              while (!queue.isEmpty()) {
+                  TreeNode node = queue.poll();
+                  if (node != null) {
+                      result.add(String.valueOf(node.val));
+                      queue.offer(node.left);
+                      queue.offer(node.right);
+                  } else {
+                      result.add("null");
+                  }
+              }
+              while (result.size() > 0 && result.get(result.size() - 1).equals("null")) {
+                  result.remove(result.size() - 1);
+              }
+              return "[" + String.join(",", result) + "]";
           }
+      }
+      \"\"\"
+      
+      Example for C++ ListNode:
+      \"\"\"
+      struct ListNode {
+          int val;
+          ListNode *next;
+          ListNode() : val(0), next(nullptr) {}
+          ListNode(int x) : val(x), next(nullptr) {}
+          ListNode(int x, ListNode *next) : val(x), next(next) {}
+          std::string toString() const {
+              std::string result = "[";
+              const ListNode* node = this;
+              while (node) {
+                  result += std::to_string(node->val);
+                  if (node->next) result += ",";
+                  node = node->next;
+              }
+              result += "]";
+              return result;
+          }
+      };
+      \"\"\"
+      
+      Example for Go ListNode (CRITICAL: must handle nil receiver):
+      \"\"\"
+      type ListNode struct {
+          Val  int
+          Next *ListNode
+      }
+      
+      func (l *ListNode) String() string {
+          if l == nil {
+              return "null"
+          }
+          result := "["
+          for node := l; node != nil; node = node.Next {
+              result += fmt.Sprintf("%d", node.Val)
+              if node.Next != nil {
+                  result += ","
+              }
+          }
+          result += "]"
+          return result
       }
       \"\"\"
 
@@ -326,7 +402,7 @@ export async function generateTestInputsForAllLanguages(
 ) {
   const { data, error } = await tryCatch(
     generateObject({
-      model: google("gemini-2.5-pro"),
+      model: google("gemini-3-pro-preview"),
       schema: testInputsAllLanguagesSchema,
       system:
         "You are converting Python test inputs to equivalent test inputs in other programming languages. Ensure the syntax is correct for each language.",
@@ -472,23 +548,29 @@ export async function fixExecutableCode(
 ): Promise<string | Error> {
   const { data, error } = await tryCatch(
     generateText({
-      model: google("gemini-2.5-pro"),
+      model: google("gemini-3-pro-preview"),
       system:
-        "You are a code fixer that corrects compilation and runtime errors in executable code. Fix issues like trying to print complex types directly, undefined variables, missing imports, and other compilation errors.",
-      prompt: `Fix the following ${language} code to ensure it compiles and runs correctly. The code is meant to execute test cases and print the results.
+        "You are a code fixer that corrects compilation and runtime errors in executable code. You must preserve the exact output format - do NOT change print statements, separators, or output structure.",
+      prompt: `Fix the following ${language} code to ensure it compiles and runs correctly. The code executes 5 test cases and prints results separated by " | " (space-pipe-space).
 
 Language: ${language}
 ${returnType ? `Return Type: ${returnType}` : ""}
 
-Common issues to fix:
-- If trying to print std::vector directly, create a helper function to print it as [1,2,3]
-- If trying to print void return types, modify to return and print a value instead
-- Replace undefined variables with appropriate null/None/nil values for the language
-- Ensure all variables are properly declared
-- Fix any syntax errors
-- Ensure the output format is comma-separated values that can be parsed
+CRITICAL RULES:
+1. DO NOT change the print/output statements or the " | " separator between results
+2. DO NOT change how results are formatted or joined
+3. Only fix compilation errors, missing imports, undefined variables, or syntax errors
+4. If code already compiles, return it unchanged
 
-Return ONLY the fixed code, no explanations or markdown formatting. The code should be ready to compile and run.
+Common fixes (if needed):
+- Add missing imports/includes
+- Fix undefined variables with appropriate null/None/nil/nullptr values
+- Fix syntax errors
+- For std::vector, create a helper to print as [1,2,3] format
+
+The output MUST remain exactly 5 values separated by " | " like: "result1 | result2 | result3 | result4 | result5"
+
+Return ONLY the fixed code, no explanations or markdown. If the code is already correct, return it as-is.
 
 Original code:
 \`\`\`${language}

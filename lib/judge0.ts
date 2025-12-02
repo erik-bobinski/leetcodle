@@ -132,7 +132,7 @@ export async function generateExpectedOutputs(
       if (stdout.trim()) {
         outputs = stdout
           .trim()
-          .split(",")
+          .split(" | ")
           .map((item) => item.trim());
       } else {
         outputs = inputs.map(() => "");
