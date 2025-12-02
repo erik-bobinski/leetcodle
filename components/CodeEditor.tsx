@@ -63,7 +63,7 @@ const leetcodleTheme = createTheme({
     foreground: "#a6accd",
     caret: "#f8f8f0",
     selection: "#2d3a4e",
-    lineHighlight: "#222b3c",
+    lineHighlight: "transparent", // Handled in EditorView.theme with transparency so selection shows through
     gutterBackground: "#1b222c",
     gutterForeground: "#4b526d"
   },
@@ -460,6 +460,13 @@ export default function CodeEditor({
         ".cm-content": {
           fontFamily: "var(--font-mono)",
           fontSize: fontSize ? `${fontSize}px` : null
+        },
+        // Semi-transparent active line so selection shows through
+        ".cm-activeLine": {
+          backgroundColor: "rgba(34, 43, 60, 0.6)"
+        },
+        ".cm-activeLineGutter": {
+          backgroundColor: "rgba(34, 43, 60, 0.6)"
         },
         ...(isLineNumbers
           ? {}
