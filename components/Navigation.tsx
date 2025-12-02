@@ -17,7 +17,7 @@ import {
 } from "@radix-ui/react-icons";
 import { ModeToggle } from "@/components/ui/ModeToggle";
 import { SignInButton, UserButton, useClerk, useAuth } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import HelpModal from "@/components/HelpModal";
 import { getLocalDateString } from "@/lib/get-local-date";
 
@@ -36,18 +36,16 @@ export default function Navigation() {
   const { session } = useClerk();
   const { isLoaded, isSignedIn } = useAuth();
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-  const [isViewingPastDate, setIsViewingPastDate] = useState(false);
   const searchParams = useSearchParams();
 
   // Check if viewing a date that's not today's local date
-  useEffect(() => {
+  const isViewingPastDate = useMemo(() => {
     const dateParam = searchParams.get("date");
     if (dateParam) {
       const localDate = getLocalDateString();
-      setIsViewingPastDate(dateParam !== localDate);
-    } else {
-      setIsViewingPastDate(false);
+      return dateParam !== localDate;
     }
+    return false;
   }, [searchParams]);
 
   // Clear localStorage user preferences when user signs out
