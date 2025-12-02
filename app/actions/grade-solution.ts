@@ -33,11 +33,11 @@ export async function gradeSolution(
     return result;
   }
 
-  // Filter by language, sort by test_case_number, and extract inputs
+  // Filter by language, sort by test_case_number, and extract inputs (trimmed)
   const testInputs = result
     .filter((obj) => obj.language === langKey)
     .sort((a, b) => a.test_case_number - b.test_case_number)
-    .map((obj) => obj.input);
+    .map((obj) => obj.input.replace(/[\r\n]+/g, "").trim());
 
   // pass in all 5 test cases
   const parsedSolution = parseCodeForSubmission(

@@ -56,7 +56,7 @@ export function Wordle({ attempts }: { attempts: boolean[][] }) {
   return (
     <div className="flex justify-center">
       {/* 6 x 6 Grid */}
-      <div className="grid w-full max-w-sm grid-cols-6 grid-rows-6 gap-2">
+      <div className="grid w-full max-w-80 grid-cols-6 grid-rows-6 gap-1.5">
         {/* Row 0 Cell 0: Top-left empty cell */}
         <div></div>
         {/* Row 0 Cells 1-5: Test Cases Axis, spans remaining 5 squares */}

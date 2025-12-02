@@ -56,12 +56,12 @@ int main() {
       return replaceIndent(`${sourceCode}
 
 func main() {
-{{indent}}fmt.Printf("%v, %v, %v, %v, %v\n",
+{{indent}}fmt.Printf("%v, %v, %v, %v, %v\\n",
 {{indent}}{{indent}}${functionName}(${testInputs[0]}),
 {{indent}}{{indent}}${functionName}(${testInputs[1]}),
 {{indent}}{{indent}}${functionName}(${testInputs[2]}),
 {{indent}}{{indent}}${functionName}(${testInputs[3]}),
-{{indent}}{{indent}}${functionName}(${testInputs[4]})
+{{indent}}{{indent}}${functionName}(${testInputs[4]}),
 {{indent}})
 }`);
 

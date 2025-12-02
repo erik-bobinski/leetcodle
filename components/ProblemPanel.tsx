@@ -1,5 +1,3 @@
-"use client";
-
 import ReactMarkdown from "react-markdown";
 import type { GetProblem } from "@/types/database";
 import { Wordle } from "@/components/Wordle";
