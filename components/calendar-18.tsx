@@ -48,7 +48,13 @@ function CustomDayButton({
     e.stopPropagation();
     if (!hasProblem) return;
     const dateString = formatLocalDate(day.date);
-    router.push(`/?date=${dateString}`);
+    const todayString = formatLocalDate(new Date());
+    // If selecting today's problem, navigate without date param
+    if (dateString === todayString) {
+      router.push("/");
+    } else {
+      router.push(`/?date=${dateString}`);
+    }
   }
 
   // Get status icon based on submission status
