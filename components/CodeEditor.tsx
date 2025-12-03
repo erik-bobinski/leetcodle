@@ -1,5 +1,3 @@
-// TODO: save the current state of the code editor in localStorage with a debouce to avoid progress loss?
-
 import { createTheme } from "thememirror";
 import { tags as t } from "@lezer/highlight";
 import { EditorState } from "@codemirror/state";
@@ -223,7 +221,8 @@ export default function CodeEditor({
     [langKey, prerequisiteDataStructure]
   );
   const [isVim, setIsVim] = useState(false);
-  const [tabSizeValue, setTabSizeValue] = useState(2); // TODO: set default to 4
+  const defaultTabSize = 4;
+  const [tabSizeValue, setTabSizeValue] = useState(defaultTabSize);
 
   // Initialize code: use latestCode if it exists and matches the current language, otherwise use boilerplate
   const [code, setCode] = useState(() => {
@@ -236,7 +235,9 @@ export default function CodeEditor({
       template ?? undefined
     );
   });
-  const [tabSize, setTabSize] = useState(indentUnit.of("  "));
+  const [tabSize, setTabSize] = useState(
+    indentUnit.of(" ".repeat(defaultTabSize))
+  );
   const [fontSize, setFontSize] = useState<number | null>(null);
   const [isLineNumbers, setIsLineNumbers] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -315,7 +316,7 @@ export default function CodeEditor({
         language: "cpp",
         vim_mode: false,
         font_size: null,
-        tab_size: 2,
+        tab_size: defaultTabSize,
         line_numbers: true
       };
     }
@@ -327,7 +328,7 @@ export default function CodeEditor({
         language: "cpp",
         vim_mode: false,
         font_size: null,
-        tab_size: 2,
+        tab_size: defaultTabSize,
         line_numbers: true
       };
     }
@@ -383,7 +384,7 @@ export default function CodeEditor({
           : "cpp",
       vim_mode: prefsFromDB.vim_mode ?? false,
       font_size: prefsFromDB.font_size ?? null,
-      tab_size: prefsFromDB.tab_size ?? 2,
+      tab_size: prefsFromDB.tab_size ?? defaultTabSize,
       line_numbers: prefsFromDB.line_numbers ?? true
     };
   }
