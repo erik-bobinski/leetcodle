@@ -7,6 +7,9 @@ import { getUserSubmission } from "@/app/actions/get-user-submission";
 import { MainLayout } from "@/components/MainLayout";
 import type { GetProblem, UserSubmissionCode } from "@/types/database";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@clerk/nextjs";
+import { getLocalSubmission } from "@/lib/local-submissions";
+import { useState, useEffect } from "react";
 
 type ProblemData = {
   problem: GetProblem;
@@ -17,30 +20,42 @@ type ProblemData = {
   date: string;
 };
 
-async function fetchProblemForLocalDate(): Promise<ProblemData> {
+async function fetchProblemForLocalDate(isSignedIn: boolean | undefined) {
   const localDate = getLocalDateString();
 
   const getProblemResult = await getProblem(localDate);
-
   if ("error" in getProblemResult) {
     throw new Error(getProblemResult.error);
   }
-
   const problem = getProblemResult as GetProblem;
 
-  const userSubmissionResult = await getUserSubmission(localDate);
-  if (userSubmissionResult !== null && "error" in userSubmissionResult) {
-    throw new Error(
-      userSubmissionResult.error ?? "Failed to load user submission"
-    );
+  // For signed-in users, get submission from database
+  // For non-signed-in users, we'll handle localStorage separately in the component
+  if (isSignedIn) {
+    const userSubmissionResult = await getUserSubmission(localDate);
+    if (userSubmissionResult !== null && "error" in userSubmissionResult) {
+      throw new Error(
+        userSubmissionResult.error ?? "Failed to load user submission"
+      );
+    }
+
+    return {
+      problem,
+      template: problem.template,
+      prerequisiteDataStructure: problem.prerequisite_data_structure ?? null,
+      latestCode: userSubmissionResult?.userSubmissionCode ?? null,
+      initialAttempts: userSubmissionResult?.userSubmissionAttempts ?? [],
+      date: localDate
+    };
   }
 
+  // For non-signed-in users, return empty submissions (will be loaded from localStorage)
   return {
     problem,
     template: problem.template,
     prerequisiteDataStructure: problem.prerequisite_data_structure ?? null,
-    latestCode: userSubmissionResult?.userSubmissionCode ?? null,
-    initialAttempts: userSubmissionResult?.userSubmissionAttempts ?? [],
+    latestCode: null,
+    initialAttempts: [],
     date: localDate
   };
 }
@@ -50,15 +65,46 @@ async function fetchProblemForLocalDate(): Promise<ProblemData> {
  * the problem data client-side. This ensures each user sees the problem
  * for their local date (midnight local time release) without a redirect.
  */
-export function LocalDateRedirect() {
+export function ClientProblemLoader() {
+  const { isSignedIn, isLoaded: authLoaded } = useAuth();
+  const [localStorageData, setLocalStorageData] = useState<{
+    latestCode: UserSubmissionCode | null;
+    initialAttempts: boolean[][];
+  } | null>(null);
+
   const { data, error, isLoading } = useQuery({
-    queryKey: ["problem", "localDate"],
-    queryFn: fetchProblemForLocalDate,
+    queryKey: ["problem", "localDate", isSignedIn],
+    queryFn: () => fetchProblemForLocalDate(isSignedIn),
     staleTime: Infinity,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    // Don't run query until auth is loaded
+    enabled: authLoaded
   });
 
-  if (isLoading) {
+  // Load from localStorage for non-signed-in users
+  useEffect(() => {
+    if (!authLoaded) return;
+
+    if (!isSignedIn && data?.date) {
+      const localSubmission = getLocalSubmission(data.date);
+      if (localSubmission) {
+        setLocalStorageData({
+          latestCode: {
+            language: localSubmission.language,
+            code: localSubmission.code
+          },
+          initialAttempts: localSubmission.attempts
+        });
+      } else {
+        setLocalStorageData({
+          latestCode: null,
+          initialAttempts: []
+        });
+      }
+    }
+  }, [authLoaded, isSignedIn, data?.date]);
+
+  if (!authLoaded || isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -94,13 +140,21 @@ export function LocalDateRedirect() {
     );
   }
 
+  // For non-signed-in users, use localStorage data if available
+  const latestCode = isSignedIn
+    ? data.latestCode
+    : (localStorageData?.latestCode ?? null);
+  const initialAttempts = isSignedIn
+    ? data.initialAttempts
+    : (localStorageData?.initialAttempts ?? []);
+
   return (
     <MainLayout
       problem={data.problem}
       template={data.template}
       prerequisiteDataStructure={data.prerequisiteDataStructure}
-      latestCode={data.latestCode}
-      initialAttempts={data.initialAttempts}
+      latestCode={latestCode}
+      initialAttempts={initialAttempts}
       date={data.date}
     />
   );

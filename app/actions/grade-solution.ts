@@ -101,7 +101,6 @@ export async function gradeSolution(
   if (grade instanceof Error) {
     return grade;
   }
-  // TODO: Display the hint somewhere in the UI
   return {
     ...grade,
     time: res.time,
