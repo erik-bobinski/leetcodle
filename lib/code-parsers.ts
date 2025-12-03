@@ -203,7 +203,9 @@ console.log([${functionName}(${testInputs[0]}), ${functionName}(${testInputs[1]}
       if (isCustomType && isOptionType) {
         // For Option<CustomType>, we need to unwrap and call Display on the inner value
         // Store results and handle None case
-        return replaceIndent(`${sourceCode}
+        return replaceIndent(`#![allow(non_snake_case)]
+
+${sourceCode}
 
 fn main() {
 {{indent}}let result0 = ${functionName}(${testInputs[0]});
@@ -237,7 +239,9 @@ fn main() {
 }`);
       } else if (isCustomType) {
         // For custom types without Option, use {} format specifier
-        return replaceIndent(`${sourceCode}
+        return replaceIndent(`#![allow(non_snake_case)]
+
+${sourceCode}
 
 fn main() {
 {{indent}}println!(
@@ -252,7 +256,9 @@ fn main() {
       }
 
       // For non-custom types, use {:?} format specifier
-      return replaceIndent(`${sourceCode}
+      return replaceIndent(`#![allow(non_snake_case)]
+
+${sourceCode}
 
 fn main() {
 {{indent}}println!(

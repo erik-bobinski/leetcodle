@@ -347,14 +347,21 @@ export async function generatePrerequisiteDataStructure(
       If no prerequisite type is needed, return an empty string.
 
       Generate \`testInputs\`, EXACTLY five test case inputs in Python syntax ONLY. You MUST generate exactly 5 test inputs, no more, no less. These will be programmatically converted to other languages.
-      Use Python syntax for all test inputs:
-      - For arrays/lists: Use Python list syntax like [1, 2, 3]
-      - For TreeNode: Use constructor syntax like TreeNode(1, TreeNode(2), TreeNode(3)) or None for null
-      - For ListNode: Use constructor syntax like ListNode(1, ListNode(2)) or None for null
-      - For strings: Use Python string syntax like "hello" or 'world'
-      - For numbers: Use plain numbers like 42 or 3.14
-      - For booleans: Use True or False
-      - For null values: Use None
+      
+      CRITICAL: Each test input should be the FUNCTION ARGUMENTS as they would appear inside a function call, separated by commas. Do NOT wrap the arguments in anything.
+      
+      For example, if the function signature is \`partition(head, x)\`:
+      - CORRECT: "ListNode(1, ListNode(2)), 3" (comma-separated arguments)
+      - WRONG: "[ListNode(1, ListNode(2)), 3]" (arguments wrapped in a list)
+      
+      Use Python syntax for individual argument values:
+      - For array/list arguments: Use Python list syntax like [1, 2, 3]
+      - For TreeNode arguments: Use constructor syntax like TreeNode(1, TreeNode(2), TreeNode(3)) or None for null
+      - For ListNode arguments: Use constructor syntax like ListNode(1, ListNode(2)) or None for null
+      - For string arguments: Use Python string syntax like "hello" or 'world'
+      - For number arguments: Use plain numbers like 42 or 3.14
+      - For boolean arguments: Use True or False
+      - For null arguments: Use None
       
       IMPORTANT: Generate ONLY Python syntax. Do NOT generate syntax for other languages. The same five test cases should be represented in Python format only.
       Ensure the test inputs capture specific edge cases for the problem to verify a solution is correct.
@@ -439,6 +446,7 @@ ${JSON.stringify(typedArgs, null, 2)}`
 }
 
 CRITICAL Requirements:
+- Each test input is a comma-separated list of FUNCTION ARGUMENTS (not wrapped in a list/array)
 - Convert each Python test input to the equivalent syntax for each language (cpp, go, java, javascript, rust, typescript)
 - For Python, keep the original inputs as-is
 - Ensure the syntax is correct and will compile/run in each language
@@ -448,10 +456,11 @@ CRITICAL Requirements:
   - JavaScript/TypeScript: Use \`new TreeNode(val, left, right)\` with \`null\` for null
   - Go: Use struct literal syntax \`&TreeNode{Val: val, Left: left, Right: right}\` with \`nil\` for null
   - Rust: Use \`Some(Rc::new(RefCell::new(TreeNode { val, left, right })))\` with \`None\` for null
-- For arrays/lists: Use the correct syntax for each language
-- For strings: Use the correct quote style and syntax
-- For numbers/booleans: Use the correct literal syntax
+- For arrays/lists arguments: Use the correct syntax for each language
+- For string arguments: Use the correct quote style and syntax
+- For number/boolean arguments: Use the correct literal syntax
 - Maintain the same logical values across all languages - only the syntax should differ
+- Do NOT wrap the arguments in an array/list - they should be comma-separated arguments ready to be inserted into a function call
 
 Generate test inputs for these languages: ${(
         Object.keys(languages) as Array<keyof typeof languages>

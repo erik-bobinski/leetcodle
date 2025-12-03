@@ -59,13 +59,13 @@ export async function gradeSolution(
     // error at judge0 endpoint
     return new Error(`Error at Judge0 Endpoint: ${res}`);
   }
-  // runtime error
+  // runtime/compile error
   if (res.stderr?.trim() || res.compile_output?.trim()) {
     return {
       graded: false,
       time: res.time,
       memory: res.memory,
-      error: res.stderr,
+      error: [res.compile_output, res.stderr].filter(Boolean).join("\n"),
       stdout: res.stdout
     };
   }
@@ -101,7 +101,7 @@ export async function gradeSolution(
   if (grade instanceof Error) {
     return grade;
   }
-
+  // TODO: Display the hint somewhere in the UI
   return {
     ...grade,
     time: res.time,
