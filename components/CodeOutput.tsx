@@ -3,6 +3,7 @@
 type ExecutionLike = {
   stdout: string | null | undefined;
   stderr: string | null | undefined;
+  hint?: string | null | undefined;
   time?: string | undefined;
   memory?: number | undefined;
 } | null;
@@ -33,17 +34,25 @@ export default function CodeOutput({
         {error ? (
           <span className="text-red-500">{error}</span>
         ) : executionResult ? (
-          executionResult?.stdout ? (
-            <pre className="whitespace-pre-wrap">
-              stdout: {executionResult?.stdout}
-            </pre>
-          ) : executionResult?.stderr ? (
-            <pre className="whitespace-pre-wrap text-red-500">
-              stderr: {executionResult?.stderr}
-            </pre>
-          ) : (
-            <span className="text-muted-foreground">No output.</span>
-          )
+          <>
+            {executionResult?.stdout ? (
+              <pre className="whitespace-pre-wrap">
+                stdout: {executionResult?.stdout}
+              </pre>
+            ) : executionResult?.stderr ? (
+              <pre className="whitespace-pre-wrap text-red-500">
+                stderr: {executionResult?.stderr}
+              </pre>
+            ) : (
+              <span className="text-muted-foreground">No output.</span>
+            )}
+            {executionResult?.hint && (
+              <div className="mt-3 border-t border-zinc-700 pt-3">
+                <span className="text-yellow-400">Hint: </span>
+                <span className="text-zinc-300">{executionResult.hint}</span>
+              </div>
+            )}
+          </>
         ) : (
           <span className="text-muted-foreground">
             Output will appear here after you submit your code {":)"}
