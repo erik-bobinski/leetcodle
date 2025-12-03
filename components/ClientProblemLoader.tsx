@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import { getProblem } from "@/app/actions/get-problem";
 import { getUserSubmission } from "@/app/actions/get-user-submission";
 import { MainLayout } from "@/components/MainLayout";
-import type { GetProblem, UserSubmissionCode } from "@/types/database";
+import type { GetProblem } from "@/types/database";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { getLocalSubmission } from "@/lib/local-submissions";
