@@ -32,11 +32,12 @@ export function MainLayout({
   initialAttempts,
   date
 }: MainLayoutProps) {
-  const [attempts, setAttempts] = useState<boolean[][]>(initialAttempts);
-  const [latestCode, setLatestCode] = useState<
-    UserSubmissionCode | null | undefined
-  >(initialLatestCode);
   const { isSignedIn } = useAuth();
+
+  const [attempts, setAttempts] = useState<boolean[][]>(initialAttempts);
+  const [latestCode] = useState<UserSubmissionCode | null | undefined>(
+    initialLatestCode
+  );
 
   // Check if user has used all attempts
   const hasMaxAttempts = attempts.length >= MAX_ATTEMPTS;
@@ -68,31 +69,6 @@ export function MainLayout({
       console.error("Failed to refresh attempts:", error);
     }
   }, [date, isSignedIn]);
-
-  // Load data from localStorage on mount for non-signed-in users
-  useEffect(() => {
-    // Only load from localStorage if not signed in and no data was provided from server
-    if (!isSignedIn) {
-      const targetDate = date || new Date().toISOString().split("T")[0];
-      const localSubmission = getLocalSubmission(targetDate);
-      if (localSubmission) {
-        // Load attempts if not already loaded
-        if (
-          initialAttempts.length === 0 &&
-          localSubmission.attempts.length > 0
-        ) {
-          setAttempts(localSubmission.attempts);
-        }
-        // Load code if not already loaded
-        if (!initialLatestCode && localSubmission.code) {
-          setLatestCode({
-            language: localSubmission.language,
-            code: localSubmission.code
-          });
-        }
-      }
-    }
-  }, [isSignedIn, date, initialAttempts.length, initialLatestCode]);
 
   // Listen for custom event to refresh attempts
   useEffect(() => {

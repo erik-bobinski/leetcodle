@@ -36,13 +36,7 @@ export default function Navigation() {
   const { session } = useClerk();
   const { isLoaded, isSignedIn } = useAuth();
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const searchParams = useSearchParams();
-
-  // Ensure first client render matches server render to avoid hydration mismatch
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Check if viewing a date that's not today's local date
   const isViewingPastDate = useMemo(() => {
@@ -137,7 +131,7 @@ export default function Navigation() {
             <TooltipContent>Editor settings</TooltipContent>
           </Tooltip>
           <ModeToggle />
-          {!mounted || !isLoaded ? (
+          {!isLoaded ? (
             <ShimmerCircle />
           ) : isSignedIn ? (
             <UserButton fallback={<ShimmerCircle />} />

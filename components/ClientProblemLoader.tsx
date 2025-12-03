@@ -9,18 +9,8 @@ import type { GetProblem, UserSubmissionCode } from "@/types/database";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { getLocalSubmission } from "@/lib/local-submissions";
-import { useState, useEffect } from "react";
 
-type ProblemData = {
-  problem: GetProblem;
-  template: GetProblem["template"];
-  prerequisiteDataStructure: GetProblem["prerequisite_data_structure"];
-  latestCode?: UserSubmissionCode | null;
-  initialAttempts: boolean[][];
-  date: string;
-};
-
-async function fetchProblemForLocalDate(isSignedIn: boolean | undefined) {
+async function fetchDataForLocalDate(isSignedIn: boolean | undefined) {
   const localDate = getLocalDateString();
 
   const getProblemResult = await getProblem(localDate);
@@ -30,7 +20,6 @@ async function fetchProblemForLocalDate(isSignedIn: boolean | undefined) {
   const problem = getProblemResult as GetProblem;
 
   // For signed-in users, get submission from database
-  // For non-signed-in users, we'll handle localStorage separately in the component
   if (isSignedIn) {
     const userSubmissionResult = await getUserSubmission(localDate);
     if (userSubmissionResult !== null && "error" in userSubmissionResult) {
@@ -49,13 +38,19 @@ async function fetchProblemForLocalDate(isSignedIn: boolean | undefined) {
     };
   }
 
-  // For non-signed-in users, return empty submissions (will be loaded from localStorage)
+  // For non-signed-in users, get submission from localStorage
+  const localSubmission = getLocalSubmission(localDate);
   return {
     problem,
     template: problem.template,
     prerequisiteDataStructure: problem.prerequisite_data_structure ?? null,
-    latestCode: null,
-    initialAttempts: [],
+    latestCode: localSubmission
+      ? {
+          language: localSubmission.language,
+          code: localSubmission.code
+        }
+      : null,
+    initialAttempts: localSubmission?.attempts ?? [],
     date: localDate
   };
 }
@@ -67,42 +62,15 @@ async function fetchProblemForLocalDate(isSignedIn: boolean | undefined) {
  */
 export function ClientProblemLoader() {
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
-  const [localStorageData, setLocalStorageData] = useState<{
-    latestCode: UserSubmissionCode | null;
-    initialAttempts: boolean[][];
-  } | null>(null);
 
   const { data, error, isLoading } = useQuery({
     queryKey: ["problem", "localDate", isSignedIn],
-    queryFn: () => fetchProblemForLocalDate(isSignedIn),
+    queryFn: () => fetchDataForLocalDate(isSignedIn),
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     // Don't run query until auth is loaded
     enabled: authLoaded
   });
-
-  // Load from localStorage for non-signed-in users
-  useEffect(() => {
-    if (!authLoaded) return;
-
-    if (!isSignedIn && data?.date) {
-      const localSubmission = getLocalSubmission(data.date);
-      if (localSubmission) {
-        setLocalStorageData({
-          latestCode: {
-            language: localSubmission.language,
-            code: localSubmission.code
-          },
-          initialAttempts: localSubmission.attempts
-        });
-      } else {
-        setLocalStorageData({
-          latestCode: null,
-          initialAttempts: []
-        });
-      }
-    }
-  }, [authLoaded, isSignedIn, data?.date]);
 
   if (!authLoaded || isLoading) {
     return (
@@ -140,21 +108,13 @@ export function ClientProblemLoader() {
     );
   }
 
-  // For non-signed-in users, use localStorage data if available
-  const latestCode = isSignedIn
-    ? data.latestCode
-    : (localStorageData?.latestCode ?? null);
-  const initialAttempts = isSignedIn
-    ? data.initialAttempts
-    : (localStorageData?.initialAttempts ?? []);
-
   return (
     <MainLayout
       problem={data.problem}
       template={data.template}
       prerequisiteDataStructure={data.prerequisiteDataStructure}
-      latestCode={latestCode}
-      initialAttempts={initialAttempts}
+      latestCode={data.latestCode}
+      initialAttempts={data.initialAttempts}
       date={data.date}
     />
   );

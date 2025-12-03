@@ -1,3 +1,5 @@
+// TODO: review local submission functions, specifically their error-handling to bubble-up to UI, maybe via alert()?
+
 // Utility functions for managing user submissions in localStorage
 // for users who are not logged in
 
@@ -15,7 +17,7 @@ const STORAGE_KEY = "leetcodle_local_submissions";
 /**
  * Get all local submissions from localStorage
  */
-export function getLocalSubmissions(): LocalSubmission[] {
+export function getLocalSubmissions() {
   if (typeof window === "undefined") {
     return [];
   }
@@ -35,7 +37,7 @@ export function getLocalSubmissions(): LocalSubmission[] {
 /**
  * Get submission for a specific problem date
  */
-export function getLocalSubmission(date: string): LocalSubmission | null {
+export function getLocalSubmission(date: string) {
   const submissions = getLocalSubmissions();
   return submissions.find((sub) => sub.date === date) || null;
 }
@@ -48,7 +50,7 @@ export function saveLocalSubmission(
   language: string,
   code: string,
   attemptResults: boolean[]
-): void {
+) {
   if (typeof window === "undefined") {
     return;
   }
