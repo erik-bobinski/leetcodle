@@ -2,8 +2,10 @@ import { getProblem } from "./actions/get-problem";
 import { connection } from "next/server";
 import { getUserSubmission } from "./actions/get-user-submission";
 import type { GetProblem } from "@/types/database";
-import { LocalDateRedirect } from "@/components/LocalDateRedirect";
+import { ClientProblemLoader } from "@/components/ClientProblemLoader";
 import { MainLayout } from "@/components/MainLayout";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
 export default async function Home({
   searchParams
@@ -12,10 +14,16 @@ export default async function Home({
 }) {
   await connection();
   const params = await searchParams;
+  const { userId } = await auth();
 
   // If no date provided, use client component to get browser's local date
   if (!params.date) {
-    return <LocalDateRedirect />;
+    return <ClientProblemLoader />;
+  }
+
+  // Redirect non-signed-in users who try to manually access a date
+  if (!userId) {
+    redirect("/");
   }
 
   const getProblemResult = await getProblem(params.date);

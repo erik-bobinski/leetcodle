@@ -53,7 +53,8 @@ export const languages = {
     extension: javascript,
     language_id: 102,
     boilerplate: `function {{functionName}}({{args}}) {
-    // write all code within this function
+{{indent}}// write all code within this function
+{{indent}}
 }`
   },
   typescript: {

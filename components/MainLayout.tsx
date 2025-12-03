@@ -28,12 +28,16 @@ export function MainLayout({
   problem,
   template,
   prerequisiteDataStructure,
-  latestCode,
+  latestCode: initialLatestCode,
   initialAttempts,
   date
 }: MainLayoutProps) {
-  const [attempts, setAttempts] = useState<boolean[][]>(initialAttempts);
   const { isSignedIn } = useAuth();
+
+  const [attempts, setAttempts] = useState<boolean[][]>(initialAttempts);
+  const [latestCode] = useState<UserSubmissionCode | null | undefined>(
+    initialLatestCode
+  );
 
   // Check if user has used all attempts
   const hasMaxAttempts = attempts.length >= MAX_ATTEMPTS;

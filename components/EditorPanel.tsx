@@ -34,6 +34,7 @@ export default function EditorPanel({
   const [executionResult, setExecutionResult] = useState<{
     stdout: string | null;
     stderr: string | null;
+    hint: string | null;
     time?: string;
     memory?: number;
   } | null>(null);
@@ -73,6 +74,7 @@ export default function EditorPanel({
                 setExecutionResult({
                   stdout: result.stdout ?? null,
                   stderr: result.error ?? null,
+                  hint: result.hint ?? null,
                   time: result.time,
                   memory: result.memory
                 });

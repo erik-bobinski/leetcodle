@@ -5,42 +5,52 @@ import { Loader2 } from "lucide-react";
 import { getProblem } from "@/app/actions/get-problem";
 import { getUserSubmission } from "@/app/actions/get-user-submission";
 import { MainLayout } from "@/components/MainLayout";
-import type { GetProblem, UserSubmissionCode } from "@/types/database";
+import type { GetProblem } from "@/types/database";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@clerk/nextjs";
+import { getLocalSubmission } from "@/lib/local-submissions";
 
-type ProblemData = {
-  problem: GetProblem;
-  template: GetProblem["template"];
-  prerequisiteDataStructure: GetProblem["prerequisite_data_structure"];
-  latestCode?: UserSubmissionCode | null;
-  initialAttempts: boolean[][];
-  date: string;
-};
-
-async function fetchProblemForLocalDate(): Promise<ProblemData> {
+async function fetchDataForLocalDate(isSignedIn: boolean | undefined) {
   const localDate = getLocalDateString();
 
   const getProblemResult = await getProblem(localDate);
-
   if ("error" in getProblemResult) {
     throw new Error(getProblemResult.error);
   }
-
   const problem = getProblemResult as GetProblem;
 
-  const userSubmissionResult = await getUserSubmission(localDate);
-  if (userSubmissionResult !== null && "error" in userSubmissionResult) {
-    throw new Error(
-      userSubmissionResult.error ?? "Failed to load user submission"
-    );
+  // For signed-in users, get submission from database
+  if (isSignedIn) {
+    const userSubmissionResult = await getUserSubmission(localDate);
+    if (userSubmissionResult !== null && "error" in userSubmissionResult) {
+      throw new Error(
+        userSubmissionResult.error ?? "Failed to load user submission"
+      );
+    }
+
+    return {
+      problem,
+      template: problem.template,
+      prerequisiteDataStructure: problem.prerequisite_data_structure ?? null,
+      latestCode: userSubmissionResult?.userSubmissionCode ?? null,
+      initialAttempts: userSubmissionResult?.userSubmissionAttempts ?? [],
+      date: localDate
+    };
   }
 
+  // For non-signed-in users, get submission from localStorage
+  const localSubmission = getLocalSubmission(localDate);
   return {
     problem,
     template: problem.template,
     prerequisiteDataStructure: problem.prerequisite_data_structure ?? null,
-    latestCode: userSubmissionResult?.userSubmissionCode ?? null,
-    initialAttempts: userSubmissionResult?.userSubmissionAttempts ?? [],
+    latestCode: localSubmission
+      ? {
+          language: localSubmission.language,
+          code: localSubmission.code
+        }
+      : null,
+    initialAttempts: localSubmission?.attempts ?? [],
     date: localDate
   };
 }
@@ -50,15 +60,19 @@ async function fetchProblemForLocalDate(): Promise<ProblemData> {
  * the problem data client-side. This ensures each user sees the problem
  * for their local date (midnight local time release) without a redirect.
  */
-export function LocalDateRedirect() {
+export function ClientProblemLoader() {
+  const { isSignedIn, isLoaded: authLoaded } = useAuth();
+
   const { data, error, isLoading } = useQuery({
-    queryKey: ["problem", "localDate"],
-    queryFn: fetchProblemForLocalDate,
+    queryKey: ["problem", "localDate", isSignedIn],
+    queryFn: () => fetchDataForLocalDate(isSignedIn),
     staleTime: Infinity,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    // Don't run query until auth is loaded
+    enabled: authLoaded
   });
 
-  if (isLoading) {
+  if (!authLoaded || isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
