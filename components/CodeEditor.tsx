@@ -454,7 +454,7 @@ export default function CodeEditor({
       EditorView.theme({
         "&": {
           height: "100%",
-          border: "2px solid var(--primary)",
+          border: "2px solid var(--border)",
           borderRadius: "4px"
         },
         ".cm-scroller": {

@@ -46,7 +46,7 @@ export default function RootLayout({
           suppressHydrationWarning
         >
           <Providers>
-            <div className="mx-auto px-4 py-4 md:px-6 lg:px-8">
+            <div className="mx-auto px-4 py-4">
               <Suspense>
                 <Navigation />
               </Suspense>

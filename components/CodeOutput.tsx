@@ -36,7 +36,7 @@ export default function CodeOutput({
         ) : executionResult ? (
           <>
             {executionResult?.stdout ? (
-              <pre className="whitespace-pre-wrap">
+              <pre className="whitespace-pre-wrap text-white">
                 stdout: {executionResult?.stdout}
               </pre>
             ) : executionResult?.stderr ? (
@@ -44,17 +44,17 @@ export default function CodeOutput({
                 stderr: {executionResult?.stderr}
               </pre>
             ) : (
-              <span className="text-muted-foreground">No output.</span>
+              <span className="text-white">No output.</span>
             )}
             {executionResult?.hint && (
               <div className="mt-3 border-t border-zinc-700 pt-3">
                 <span className="text-yellow-400">Hint: </span>
-                <span className="text-zinc-300">{executionResult.hint}</span>
+                <span className="text-white">{executionResult.hint}</span>
               </div>
             )}
           </>
         ) : (
-          <span className="text-muted-foreground">
+          <span className="text-white">
             Output will appear here after you submit your code {":)"}
           </span>
         )}
