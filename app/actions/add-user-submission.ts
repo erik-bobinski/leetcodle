@@ -63,14 +63,17 @@ export async function addUserSubmission(
               eq(UserSubmissionsTable.problem_id, problemId)
             )
           )
-          .limit(1)
       );
       if (checkError) {
         throw checkError;
       }
 
       let submissionId: string;
+
       if (existingSubmission && existingSubmission.length > 0) {
+        if (existingSubmission.length >= 5) {
+          throw new Error("You used all your attempts");
+        }
         // Use existing submission
         submissionId = existingSubmission[0].id;
       } else {
@@ -116,7 +119,7 @@ export async function addUserSubmission(
           ? existingAttempts[0].attempt_number + 1
           : 1;
       if (nextAttemptNumber > 5) {
-        return new Error("All 5 attempts have been used for this problem");
+        throw new Error("All 5 attempts have been used for this problem");
       }
 
       const testCaseResultsJson = JSON.stringify(newAttempt);
@@ -128,7 +131,7 @@ export async function addUserSubmission(
         })
       );
       if (insertAttemptError) {
-        return insertAttemptError;
+        throw insertAttemptError;
       }
 
       // Upsert code in user_submission_code
@@ -152,7 +155,7 @@ export async function addUserSubmission(
           })
       );
       if (upsertCodeError) {
-        return upsertCodeError;
+        throw upsertCodeError;
       }
     })
   );
