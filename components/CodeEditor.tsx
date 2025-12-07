@@ -1,4 +1,3 @@
-// TODO: light mode sucks for a couple components like the console output text
 import { createTheme } from "thememirror";
 import { tags as t } from "@lezer/highlight";
 import { EditorState } from "@codemirror/state";

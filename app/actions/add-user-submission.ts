@@ -17,8 +17,6 @@ export async function addUserSubmission(
   newAttempt: boolean[],
   date?: string
 ) {
-  // TODO: localStorage should track this otherwise for non-logged in users
-
   const { data: authData, error: authError } = await tryCatch(auth());
   if (authError instanceof Error) return authError;
   const userId = authData?.userId;
