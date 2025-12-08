@@ -69,9 +69,6 @@ export async function addUserSubmission(
       let submissionId: string;
 
       if (existingSubmission && existingSubmission.length > 0) {
-        if (existingSubmission.length >= 5) {
-          throw new Error("You used all your attempts");
-        }
         // Use existing submission
         submissionId = existingSubmission[0].id;
       } else {
