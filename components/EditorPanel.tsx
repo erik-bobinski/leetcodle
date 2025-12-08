@@ -105,7 +105,7 @@ export default function EditorPanel({
           onCollapse={() => setIsConsoleCollapsed(true)}
           onExpand={() => setIsConsoleCollapsed(false)}
         >
-          <div className="flex h-full flex-col overflow-hidden border-t border-zinc-700">
+          <div className="border-border flex h-full flex-col overflow-hidden border-t">
             {/* Console Header */}
             <button
               onClick={toggleConsole}
@@ -131,7 +131,7 @@ export default function EditorPanel({
       {isConsoleCollapsed && (
         <button
           onClick={toggleConsole}
-          className="hover:bg-accent/50 flex w-full cursor-pointer items-center gap-1 border-t border-zinc-700 px-4 py-2 transition-colors"
+          className="hover:bg-accent/50 border-border flex w-full cursor-pointer items-center gap-1 border-t px-4 py-2 transition-colors"
         >
           <span className="text-sm font-medium">Console</span>
           <ChevronUp className="h-4 w-4" />

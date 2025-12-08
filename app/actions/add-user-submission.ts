@@ -17,8 +17,6 @@ export async function addUserSubmission(
   newAttempt: boolean[],
   date?: string
 ) {
-  // TODO: localStorage should track this otherwise for non-logged in users
-
   const { data: authData, error: authError } = await tryCatch(auth());
   if (authError instanceof Error) return authError;
   const userId = authData?.userId;
@@ -63,13 +61,13 @@ export async function addUserSubmission(
               eq(UserSubmissionsTable.problem_id, problemId)
             )
           )
-          .limit(1)
       );
       if (checkError) {
         throw checkError;
       }
 
       let submissionId: string;
+
       if (existingSubmission && existingSubmission.length > 0) {
         // Use existing submission
         submissionId = existingSubmission[0].id;
@@ -116,7 +114,7 @@ export async function addUserSubmission(
           ? existingAttempts[0].attempt_number + 1
           : 1;
       if (nextAttemptNumber > 5) {
-        return new Error("All 5 attempts have been used for this problem");
+        throw new Error("All 5 attempts have been used for this problem");
       }
 
       const testCaseResultsJson = JSON.stringify(newAttempt);
@@ -128,7 +126,7 @@ export async function addUserSubmission(
         })
       );
       if (insertAttemptError) {
-        return insertAttemptError;
+        throw insertAttemptError;
       }
 
       // Upsert code in user_submission_code
@@ -152,7 +150,7 @@ export async function addUserSubmission(
           })
       );
       if (upsertCodeError) {
-        return upsertCodeError;
+        throw upsertCodeError;
       }
     })
   );

@@ -5,6 +5,7 @@ import { useSignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
+import { validateUser } from "@/app/actions/validate-user";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -20,26 +21,15 @@ export default function SignInPage() {
     setError("");
 
     try {
-      // First, check if user exists in our database
-      const response = await fetch("/api/auth/validate-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_API_SECRET}`
-        },
-        body: JSON.stringify({ email })
-      });
+      // check if user exists in app db
+      const validationResult = await validateUser(email);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        setError(
-          errorData.error || "User not found, check your credentials or sign up"
-        );
+      if (validationResult instanceof Error) {
+        setError(validationResult.message);
         setIsLoading(false);
         return;
       }
 
-      // If user exists in our database, proceed with Clerk sign-in
       if (!signIn) {
         setError("Sign-in service not available. Please try again.");
         setIsLoading(false);

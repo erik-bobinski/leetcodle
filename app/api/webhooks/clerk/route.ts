@@ -89,7 +89,7 @@ export async function POST(req: Request) {
         username,
         theme: null,
         font_size: 14,
-        tab_size: 2,
+        tab_size: 4,
         line_numbers: true,
         vim_mode: false,
         language: "cpp"

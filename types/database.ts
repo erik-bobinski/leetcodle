@@ -127,6 +127,22 @@ export const prerequisiteDataStructureSchema = z.object({
   })
 });
 
+export const prerequisiteDataStructurePrintingSchema = z.object({
+  completeDataStructures: z
+    .object({
+      cpp: z.string(),
+      go: z.string(),
+      java: z.string(),
+      javascript: z.string(),
+      python: z.string(),
+      rust: z.string(),
+      typescript: z.string()
+    })
+    .describe(
+      "The complete data structure code for each language with the printing method already inserted. If a printing method is needed, it should be properly integrated into the class/struct. If no printing method is needed, return the original data structure code unchanged for that language."
+    )
+});
+
 export const testInputsAllLanguagesSchema = z.object({
   cpp: z
     .array(z.string())

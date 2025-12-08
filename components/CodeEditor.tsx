@@ -1,4 +1,3 @@
-// TODO: light mode sucks for a couple components like the console output text
 import { createTheme } from "thememirror";
 import { tags as t } from "@lezer/highlight";
 import { EditorState } from "@codemirror/state";
@@ -454,7 +453,7 @@ export default function CodeEditor({
       EditorView.theme({
         "&": {
           height: "100%",
-          border: "2px solid var(--primary)",
+          border: "2px solid var(--border)",
           borderRadius: "4px"
         },
         ".cm-scroller": {

@@ -11,6 +11,7 @@ import {
   type PrerequisiteDataStructure,
   referenceSolutionSchema,
   prerequisiteDataStructureSchema,
+  prerequisiteDataStructurePrintingSchema,
   gradeSolutionOutputSchema,
   testInputsAllLanguagesSchema
 } from "@/types/database";
@@ -59,7 +60,7 @@ export async function generateProblemDetails() {
     frequently used in these ${recentProblemTitles.length} previous problems (i.e. don't create a problem that revolves around a
     string input if they are common in these problems): ${recentProblemTitles.join(", ")}.`
         : "This is a new problem database, so there are no previous problems to avoid duplicating"
-    } For today, generate a problem that requires the user to return a linked list.`,
+    }`,
       temperature: 1.8
     })
   );
@@ -98,8 +99,6 @@ export async function generateProblemDetails() {
     use "TreeNode* flatten(TreeNode* root)" that returns the flattened tree.
 
     For any generated field that depends on the programming language's syntax, ensure it is correct.
-
-    For today create a problem that requires a linked list to be returned
 
     Generate those instructions for these languages: ${(
       Object.keys(languages) as Array<keyof typeof languages>
@@ -225,25 +224,12 @@ export async function generatePrerequisiteDataStructure(
       Strict requirements:
       - Output must be a SINGLE minimal type definition per language when needed (class/struct/type alias) with only the essential fields (e.g., left, right, val/next, value).
       - DO NOT write or include any solution code, algorithms, helper methods, or functions unrelated to the type definition.
-      - DO NOT include the problem's function, main method, tests, imports, printing, or comments explaining the solution.
+      - DO NOT include the problem's function, main method, tests, imports, printing methods, or comments explaining the solution.
       - Constructors are allowed only if idiomatic for the language.
       - Use idiomatic field names per language. Prefer \`val\` or \`value\` consistently.
       - Wrap the entire definition in a single code block for each language.
-      - Java: CRITICAL - Do NOT use the \`public\` keyword for the class. Use package-private (no access modifier) so it can be in the same file as the Main class. Java only allows one public class per file, and the file name must match the public class name.
-      
-      CRITICAL: You MUST include a string representation method for each data structure that TRAVERSES AND PRINTS THE ENTIRE STRUCTURE IF the problem requires the solution to return the entire structure (or the head of the structure), not just the current node. This is essential for grading solutions that return the head of a list or root of a tree.
-      
-      For ListNode: The toString/repr method must traverse the entire linked list via the \`next\` pointer and return a string like "[1,2,3,4]" showing all values in order.
-      For TreeNode: The toString/repr method must do a level-order (BFS) traversal and return a string like "[1,2,3,null,4,5]" showing all values including nulls for missing children (trim trailing nulls).
-      For any other custom data structure: infer how to implement the toString method
-      
-      Implement the appropriate method for each language:
-      - Python: Include \`__repr__\` method that traverses and returns the full structure as a list string.
-      - JavaScript/TypeScript: Include a \`toString()\` method that traverses and returns the full structure.
-      - Java: Include a \`toString()\` method that traverses and returns the full structure. The class must be package-private (no \`public\` keyword).
-      - C++: Include a \`toString()\` method that returns std::string with the full structure. Include \`#include <string>\` and \`#include <queue>\` (for TreeNode) in the struct definition if needed.
-      - Go: Include a \`String()\` method that traverses and returns the full structure. CRITICAL: The method MUST handle nil receiver and return "null" if the receiver is nil.
-      - Rust: Include a \`Display\` trait implementation that traverses and formats the full structure.
+      - Java: Do NOT use the \`public\` keyword for the class. Use package-private (no access modifier) so it can be in the same file as the Main class. Java only allows one public class per file, and the file name must match the public class name.
+
 
       Examples of acceptable outputs (Python ListNode):
       \"\"\"
@@ -251,20 +237,10 @@ export async function generatePrerequisiteDataStructure(
           def __init__(self, val: int = 0, next: 'ListNode | None' = None):
               self.val = val
               self.next = next
-          
-          def __repr__(self):
-              result = []
-              node = self
-              while node:
-                  result.append(str(node.val))
-                  node = node.next
-              return "[" + ",".join(result) + "]"
       \"\"\"
       
       Example for Java TreeNode (note: NO public keyword):
       \"\"\"
-      import java.util.*;
-      
       class TreeNode {
           int val;
           TreeNode left;
@@ -275,26 +251,6 @@ export async function generatePrerequisiteDataStructure(
               this.val = val;
               this.left = left;
               this.right = right;
-          }
-          @Override
-          public String toString() {
-              List<String> result = new ArrayList<>();
-              Queue<TreeNode> queue = new LinkedList<>();
-              queue.offer(this);
-              while (!queue.isEmpty()) {
-                  TreeNode node = queue.poll();
-                  if (node != null) {
-                      result.add(String.valueOf(node.val));
-                      queue.offer(node.left);
-                      queue.offer(node.right);
-                  } else {
-                      result.add("null");
-                  }
-              }
-              while (result.size() > 0 && result.get(result.size() - 1).equals("null")) {
-                  result.remove(result.size() - 1);
-              }
-              return "[" + String.join(",", result) + "]";
           }
       }
       \"\"\"
@@ -307,40 +263,14 @@ export async function generatePrerequisiteDataStructure(
           ListNode() : val(0), next(nullptr) {}
           ListNode(int x) : val(x), next(nullptr) {}
           ListNode(int x, ListNode *next) : val(x), next(next) {}
-          std::string toString() const {
-              std::string result = "[";
-              const ListNode* node = this;
-              while (node) {
-                  result += std::to_string(node->val);
-                  if (node->next) result += ",";
-                  node = node->next;
-              }
-              result += "]";
-              return result;
-          }
       };
       \"\"\"
       
-      Example for Go ListNode (CRITICAL: must handle nil receiver):
+      Example for Go ListNode:
       \"\"\"
       type ListNode struct {
           Val  int
           Next *ListNode
-      }
-      
-      func (l *ListNode) String() string {
-          if l == nil {
-              return "null"
-          }
-          result := "["
-          for node := l; node != nil; node = node.Next {
-              result += fmt.Sprintf("%d", node.Val)
-              if node.Next != nil {
-                  result += ","
-              }
-          }
-          result += "]"
-          return result
       }
       \"\"\"
 
@@ -502,6 +432,115 @@ Generate test inputs for these languages: ${(
   return data.object;
 }
 
+/**
+ * Generates the printing methods for prerequisite data structures across all languages.
+ * This function takes all language data structure codes and generates complete data structures
+ * with printing methods already integrated for each language.
+ */
+export async function generatePrerequisiteDataStructurePrinting(
+  dataStructureCodes: Record<string, string>,
+  problemDescription: string,
+  problemTitle: string,
+  functionName: string,
+  returnTypes: Record<string, string>,
+  exampleInput: string,
+  exampleOutput: string
+) {
+  // Filter out empty codes
+  const nonEmptyCodes = Object.entries(dataStructureCodes).filter(
+    ([, code]) => code && code.trim().length > 0
+  );
+
+  // If no data structures exist, return empty object
+  if (nonEmptyCodes.length === 0) {
+    return {};
+  }
+
+  // Build the prompt with all languages
+  const languagesSection = nonEmptyCodes
+    .map(([langKey, code]) => {
+      const langInfo = languages[langKey as keyof typeof languages];
+      return `${langInfo.name} ${langInfo.version} (${langKey}):
+\`\`\`${langKey}
+${code}
+\`\`\`
+Return Type: ${returnTypes[langKey] || "N/A"}`;
+    })
+    .join("\n\n");
+
+  const { data, error } = await tryCatch(
+    generateObject({
+      model: google("gemini-3-pro-preview"),
+      schema: prerequisiteDataStructurePrintingSchema,
+      system:
+        "You are helping create printing methods for data structures used in a coding problem across multiple languages. Analyze the problem context to determine if methods should print a single node or traverse the entire structure. This printing method will be used by AI graders to see the result of a user's function.",
+      prompt: `Problem Title: ${problemTitle}
+Problem Description: ${problemDescription}
+Function Name: ${functionName}
+
+Example Input: ${exampleInput}
+Example Output: ${exampleOutput}
+
+Data Structures by Language:
+${languagesSection}
+
+You must return the COMPLETE data structure code for EACH language with the printing method already inserted and properly integrated.
+
+The example input and output show how the function transforms the data structure. Use this to understand what the printing method should display when the function returns a data structure.
+
+Analyze the problem context to determine what the printing method should do:
+
+1. If the problem requires returning the HEAD/ROOT of a structure (e.g., "return the head of the list", "return the root of the tree", 
+   function returns ListNode/TreeNode), then the printing method MUST TRAVERSE THE ENTIRE STRUCTURE:
+   - For ListNode: Traverse the entire linked list via the \`next\` pointer and return a string like "[1,2,3,4]" showing ALL values in order.
+   - For TreeNode: Do a level-order (BFS) traversal and return a string like "[1,2,3,null,4,5]" showing ALL values including nulls for missing children (trim trailing nulls).
+
+2. If the problem only works with individual nodes and doesn't require returning the full structure,
+   then the printing method can return just the current node's value (e.g., "ListNode(1)" or "TreeNode(1)").
+
+3. If no printing method is needed for this problem, return the original data structure code unchanged for that language.
+
+4. If you're unsure, default to traversing the entire structure as it's more useful for debugging and grading.
+
+Language-specific method names:
+- Python: \`__repr__\` method
+- JavaScript/TypeScript: \`toString()\` method
+- Java: \`toString()\` method with \`@Override\` annotation
+- C++: \`toString()\` const method returning \`std::string\`
+- Go: \`String()\` method (must handle nil receiver)
+- Rust: \`Display\` trait implementation
+
+Return complete data structures for all languages provided, even if some don't need printing methods (return original code unchanged).`,
+      temperature: 0.3
+    })
+  );
+  if (error) {
+    return error;
+  }
+  if (!data || !data.object || !data.object.completeDataStructures) {
+    return new Error("No complete data structures generated from AI");
+  }
+
+  // Merge results: use generated code for languages that had data structures, keep empty strings for others
+  const result: Record<string, string> = {};
+  const langKeys = Object.keys(dataStructureCodes);
+
+  for (const langKey of langKeys) {
+    const originalCode = dataStructureCodes[langKey] || "";
+    if (originalCode.trim().length === 0) {
+      result[langKey] = "";
+    } else {
+      const generatedCode =
+        data.object.completeDataStructures[
+          langKey as keyof typeof data.object.completeDataStructures
+        ];
+      result[langKey] = generatedCode || originalCode;
+    }
+  }
+
+  return result;
+}
+
 export async function gradeSolutionOutput(
   userTestCases: Record<string, string>,
   expectedTestCases: Record<string, string>,
@@ -554,13 +593,15 @@ export async function fixExecutableCode(
   executableCode: string,
   language: string,
   returnType?: string
-): Promise<string | Error> {
+) {
   const { data, error } = await tryCatch(
     generateText({
       model: google("gemini-3-pro-preview"),
       system:
         "You are a code fixer that corrects compilation and runtime errors in executable code. You must preserve the exact output format - do NOT change print statements, separators, or output structure.",
-      prompt: `Fix the following ${language} code to ensure it compiles and runs correctly. The code executes 5 test cases and prints results separated by " | " (space-pipe-space).
+      prompt: `View the following code to fix compiler/runtimes errors if you see any, they may or may not exist.
+
+The code executes 5 test cases and prints results separated by " | " (space-pipe-space).
 
 Language: ${language}
 ${returnType ? `Return Type: ${returnType}` : ""}
