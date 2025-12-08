@@ -2,6 +2,7 @@ import { db } from "@/drizzle";
 import { desc, eq } from "drizzle-orm";
 import {
   generatePrerequisiteDataStructure,
+  generatePrerequisiteDataStructurePrinting,
   generateProblemDetails,
   generateReferenceSolution,
   generateTestInputsForAllLanguages
@@ -89,6 +90,8 @@ export async function GET(request: Request) {
     );
   }
 
+  // Generate reference solution using original data structures (before printing methods are added)
+  // The reference solution doesn't need the printing methods
   const referenceSolution = await generateReferenceSolution(
     problemDetails.description,
     problemDetails.template.functionName,
@@ -110,7 +113,7 @@ export async function GET(request: Request) {
       db
         .select({ problem_number: ProblemsTable.problem_number })
         .from(ProblemsTable)
-        .orderBy(desc(ProblemsTable.created_at))
+        .orderBy(desc(ProblemsTable.problem_number))
         .limit(1)
     );
   if (mostRecentProblemError) {
@@ -129,17 +132,40 @@ export async function GET(request: Request) {
       ? 0
       : mostRecentProblemData[0].problem_number;
 
-  // Prepare data for later inserts
-  const prerequisiteEntries =
-    prerequisiteDataStructure.prerequisiteDataStructure !== undefined
-      ? Object.entries(
-          prerequisiteDataStructure.prerequisiteDataStructure
-        ).filter(
-          ([, code]) => typeof code === "string" && code.trim().length > 0
-        )
-      : [];
+  // Generate printing methods for all languages at once
+  // Only run if prerequisite data structures exist
+  const prerequisiteDataStructureWithPrinting =
+    prerequisiteDataStructure.prerequisiteDataStructure;
+  let mergedPrerequisiteDataStructures: Record<string, string> = {};
+
+  if (prerequisiteDataStructureWithPrinting) {
+    // Generate complete data structures with printing methods for all languages at once
+    const completeDataStructures =
+      await generatePrerequisiteDataStructurePrinting(
+        prerequisiteDataStructureWithPrinting,
+        problemDetails.description,
+        problemDetails.title,
+        problemDetails.template.functionName,
+        problemDetails.template.returnType,
+        problemDetails.example_input,
+        problemDetails.example_output
+      );
+
+    if (completeDataStructures instanceof Error) {
+      return Response.json(
+        `Error generating print statement for prerequisite data structures: ${completeDataStructures}`
+      );
+    }
+    mergedPrerequisiteDataStructures = completeDataStructures;
+  }
+
+  // Prepare data for later inserts using merged data structures
+  const prerequisiteEntries = Object.entries(
+    mergedPrerequisiteDataStructures
+  ).filter(([, code]) => typeof code === "string" && code.trim().length > 0);
 
   // Generate test inputs for all languages using AI
+  // Use original data structures (before printing methods) for test input generation
   const convertedTestInputsResult = await generateTestInputsForAllLanguages(
     prerequisiteDataStructure.testInputs.python,
     prerequisiteDataStructure.prerequisiteDataStructure,
