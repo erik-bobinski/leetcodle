@@ -160,7 +160,7 @@ export async function generateReferenceSolution(
         - C++: Write as a standalone function (not inside a class). Include necessary headers like #include <iostream> if needed.
         - Java: Write as a public static method inside a class named "Main" (e.g., "public class Main { public static ReturnType functionName(...) { ... } }")
         - Python: Write as a standalone function (not inside a class)
-        - JavaScript/TypeScript: Write as a standalone function
+        - JavaScript: Write as a standalone function
         - Go: Write as a standalone function. MUST include "package main" at the very top of the code. Include necessary imports like "fmt" if needed.
         - Rust: Write as a standalone function (not inside an impl block)
         
@@ -377,13 +377,13 @@ ${JSON.stringify(typedArgs, null, 2)}`
 
 CRITICAL Requirements:
 - Each test input is a comma-separated list of FUNCTION ARGUMENTS (not wrapped in a list/array)
-- Convert each Python test input to the equivalent syntax for each language (cpp, go, java, javascript, rust, typescript)
+- Convert each Python test input to the equivalent syntax for each language (cpp, go, java, javascript, rust)
 - For Python, keep the original inputs as-is
 - Ensure the syntax is correct and will compile/run in each language
 - For TreeNode/ListNode: Use the correct constructor syntax for each language
   - C++: Use \`new TreeNode(val, left, right)\` with \`nullptr\` for null. All TreeNode calls MUST have exactly 3 arguments.
   - Java: Use \`new TreeNode(val, left, right)\` with \`null\` for null
-  - JavaScript/TypeScript: Use \`new TreeNode(val, left, right)\` with \`null\` for null
+  - JavaScript: Use \`new TreeNode(val, left, right)\` with \`null\` for null
   - Go: Use struct literal syntax \`&TreeNode{Val: val, Left: left, Right: right}\` with \`nil\` for null
   - Rust: Use \`Some(Rc::new(RefCell::new(TreeNode { val, left, right })))\` with \`None\` for null
 - For arrays/lists arguments: Use the correct syntax for each language
@@ -504,7 +504,7 @@ Analyze the problem context to determine what the printing method should do:
 
 Language-specific method names:
 - Python: \`__repr__\` method
-- JavaScript/TypeScript: \`toString()\` method
+- JavaScript: \`toString()\` method
 - Java: \`toString()\` method with \`@Override\` annotation
 - C++: \`toString()\` const method returning \`std::string\`
 - Go: \`String()\` method (must handle nil receiver)

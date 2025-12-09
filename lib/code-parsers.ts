@@ -165,30 +165,6 @@ console.log([(result0 ? result0.toString() : "null"), (result1 ? result1.toStrin
 
 console.log([${functionName}(${testInputs[0]}), ${functionName}(${testInputs[1]}), ${functionName}(${testInputs[2]}), ${functionName}(${testInputs[3]}), ${functionName}(${testInputs[4]})].join(" | "));`);
 
-    case "typescript":
-      // Check if return type is a custom type (needs explicit toString() call)
-      const isTsCustomType =
-        returnType &&
-        (returnType.includes("TreeNode") ||
-          returnType.includes("ListNode") ||
-          returnType.includes("Node"));
-
-      if (isTsCustomType) {
-        // For custom types, store results and call toString() with null check
-        return replaceIndent(`${sourceCode}
-
-const result0 = ${functionName}(${testInputs[0]});
-const result1 = ${functionName}(${testInputs[1]});
-const result2 = ${functionName}(${testInputs[2]});
-const result3 = ${functionName}(${testInputs[3]});
-const result4 = ${functionName}(${testInputs[4]});
-console.log([(result0 ? result0.toString() : "null"), (result1 ? result1.toString() : "null"), (result2 ? result2.toString() : "null"), (result3 ? result3.toString() : "null"), (result4 ? result4.toString() : "null")].join(" | "));`);
-      }
-
-      return replaceIndent(`${sourceCode}
-
-console.log([${functionName}(${testInputs[0]}), ${functionName}(${testInputs[1]}), ${functionName}(${testInputs[2]}), ${functionName}(${testInputs[3]}), ${functionName}(${testInputs[4]})].join(" | "));`);
-
     case "rust":
       // Check if return type is a custom type (needs Display trait, not Debug)
       // Also check if it's wrapped in Option

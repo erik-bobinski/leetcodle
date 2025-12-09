@@ -1,0 +1,39 @@
+name: Generate Daily Problem
+
+on:
+  schedule:
+    - cron: "0 10 * * *"
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  generate-problem:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run generate problem script
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+          NODE_ENV: production
+        run: |
+          # Run the cron job directly using tsx (TypeScript executor)
+          pnpm tsx github/generate-problem.ts
