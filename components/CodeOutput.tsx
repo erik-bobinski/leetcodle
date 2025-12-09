@@ -1,3 +1,4 @@
+// TODO: remove stdout from console and consider adding other things like: "'Accepted' in green if you get it right"
 "use client";
 
 type ExecutionLike = {

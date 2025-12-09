@@ -35,18 +35,29 @@ export async function POST(request: NextRequest) {
 
   try {
     const headers = getHeaders();
-    const { source_code, language_id } = await request.json();
+    const { source_code, language_id, compiler_options } = await request.json();
     const wait = request.nextUrl.searchParams.get("wait") === "true";
+
+    const requestBody: {
+      source_code: string;
+      language_id: number;
+      compiler_options?: string;
+    } = {
+      source_code: Buffer.from(source_code).toString("base64"),
+      language_id
+    };
+
+    // Add compiler options if provided
+    if (compiler_options) {
+      requestBody.compiler_options = compiler_options;
+    }
 
     const response = await fetch(
       `${JUDGE0_BASE_URL}/submissions${wait ? "?wait=true&base64_encoded=true" : "?base64_encoded=true"}`,
       {
         method: "POST",
         headers,
-        body: JSON.stringify({
-          source_code: Buffer.from(source_code).toString("base64"),
-          language_id
-        })
+        body: JSON.stringify(requestBody)
       }
     );
     if (!response.ok) {

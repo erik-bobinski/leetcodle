@@ -57,16 +57,6 @@ export const languages = {
 {{indent}}
 }`
   },
-  typescript: {
-    name: "TypeScript",
-    version: "5.6.2",
-    extension: () => javascript({ typescript: true }),
-    language_id: 94,
-    boilerplate: `function {{functionName}}({{args}}): {{returns}} {
-{{indent}}// write all code within this function
-{{indent}}
-}`
-  },
   python: {
     name: "Python",
     version: "3.13.2",

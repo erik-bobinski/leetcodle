@@ -49,8 +49,7 @@ export const problemDetailsTemplateSchema = z.object({
     java: z.array(z.string()),
     javascript: z.array(z.string()),
     python: z.array(z.string()),
-    rust: z.array(z.string()),
-    typescript: z.array(z.string())
+    rust: z.array(z.string())
   }),
   returnType: z.object({
     cpp: z.string(),
@@ -58,8 +57,7 @@ export const problemDetailsTemplateSchema = z.object({
     java: z.string(),
     javascript: z.string(),
     python: z.string(),
-    rust: z.string(),
-    typescript: z.string()
+    rust: z.string()
   }),
   jsDocString: z.string().describe(
     `A JSON string where keys are parameter names
@@ -82,8 +80,7 @@ export const problemDetailsSchema = z.object({
       java: z.array(z.string()),
       javascript: z.array(z.string()),
       python: z.array(z.string()),
-      rust: z.array(z.string()),
-      typescript: z.array(z.string())
+      rust: z.array(z.string())
     }),
     returnType: z.object({
       cpp: z.string(),
@@ -91,8 +88,7 @@ export const problemDetailsSchema = z.object({
       java: z.string(),
       javascript: z.string(),
       python: z.string(),
-      rust: z.string(),
-      typescript: z.string()
+      rust: z.string()
     }),
     jsDocString: z.string().describe(
       `A JSON string where keys are parameter names
@@ -107,8 +103,7 @@ export const referenceSolutionSchema = z.object({
   java: z.string(),
   javascript: z.string(),
   python: z.string(),
-  rust: z.string(),
-  typescript: z.string()
+  rust: z.string()
 });
 export const prerequisiteDataStructureSchema = z.object({
   prerequisiteDataStructure: z
@@ -118,8 +113,7 @@ export const prerequisiteDataStructureSchema = z.object({
       java: z.string(),
       javascript: z.string(),
       python: z.string(),
-      rust: z.string(),
-      typescript: z.string()
+      rust: z.string()
     })
     .optional(),
   testInputs: z.object({
@@ -135,8 +129,7 @@ export const prerequisiteDataStructurePrintingSchema = z.object({
       java: z.string(),
       javascript: z.string(),
       python: z.string(),
-      rust: z.string(),
-      typescript: z.string()
+      rust: z.string()
     })
     .describe(
       "The complete data structure code for each language with the printing method already inserted. If a printing method is needed, it should be properly integrated into the class/struct. If no printing method is needed, return the original data structure code unchanged for that language."
@@ -160,9 +153,6 @@ export const testInputsAllLanguagesSchema = z.object({
     .array(z.string())
     .length(5, "Must generate exactly 5 test inputs for each language"),
   rust: z
-    .array(z.string())
-    .length(5, "Must generate exactly 5 test inputs for each language"),
-  typescript: z
     .array(z.string())
     .length(5, "Must generate exactly 5 test inputs for each language")
 });
