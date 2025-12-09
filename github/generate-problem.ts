@@ -3,7 +3,6 @@
  * Can be run directly with tsx or called from GitHub Actions
  *
  * Usage: pnpm tsx scripts/generate-problem.ts
- * Or: npx tsx scripts/generate-problem.ts
  */
 
 import { config } from "dotenv";
@@ -38,6 +37,7 @@ import {
 } from "@/drizzle/schema";
 
 async function main() {
+  const startTime = Date.now();
   try {
     console.log("Starting problem generation...");
 
@@ -47,6 +47,7 @@ async function main() {
     const activeDateString = activeDate.toISOString().split("T")[0];
 
     // Check if a problem already exists for this active_date to prevent duplicates
+    console.log("Checking for existing problem...");
     const { data: existingProblem, error: checkError } = await tryCatch(
       db
         .select({ id: ProblemsTable.id })
@@ -67,6 +68,7 @@ async function main() {
       process.exit(0);
     }
 
+    console.log("Generating problem details...");
     const problemDetails = await generateProblemDetails();
     if (problemDetails instanceof Error) {
       console.error(
@@ -75,6 +77,7 @@ async function main() {
       process.exit(1);
     }
 
+    console.log("Generating prerequisite data structures and test inputs...");
     const prerequisiteDataStructure = await generatePrerequisiteDataStructure(
       problemDetails.title,
       problemDetails.description,
@@ -90,6 +93,7 @@ async function main() {
       process.exit(1);
     }
 
+    console.log("Generating reference solutions...");
     const referenceSolution = await generateReferenceSolution(
       problemDetails.description,
       problemDetails.template.functionName,
@@ -127,6 +131,9 @@ async function main() {
     let mergedPrerequisiteDataStructures: Record<string, string> = {};
 
     if (prerequisiteDataStructureWithPrinting) {
+      console.log(
+        "Generating custom printing for prerequisite data structures..."
+      );
       const completeDataStructures =
         await generatePrerequisiteDataStructurePrinting(
           prerequisiteDataStructureWithPrinting,
@@ -151,6 +158,7 @@ async function main() {
       mergedPrerequisiteDataStructures
     ).filter(([, code]) => typeof code === "string" && code.trim().length > 0);
 
+    console.log("Converting test inputs for all languages...");
     const convertedTestInputsResult = await generateTestInputsForAllLanguages(
       prerequisiteDataStructure.testInputs.python,
       prerequisiteDataStructure.prerequisiteDataStructure,
@@ -162,6 +170,7 @@ async function main() {
     }
     const convertedTestInputs = convertedTestInputsResult;
 
+    console.log("Generating expected outputs...");
     const expectedOutputs = await generateExpectedOutputs(
       convertedTestInputs,
       referenceSolution,
@@ -174,6 +183,7 @@ async function main() {
       process.exit(1);
     }
 
+    console.log("Starting database transaction...");
     const { error: transactionError } = await tryCatch(
       db.transaction(async (tx) => {
         const { data: problemInsertData, error: problemInsertError } =
@@ -306,10 +316,28 @@ async function main() {
       process.exit(1);
     }
 
+    const elapsedTime = Date.now() - startTime;
+    const seconds = Math.floor(elapsedTime / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    const timeString =
+      minutes > 0 ? `${minutes}m ${remainingSeconds}s` : `${seconds}s`;
+
     console.log("Problem generated successfully!");
+    console.log(`Total time elapsed: ${timeString} (${elapsedTime}ms)`);
     process.exit(0);
   } catch (error) {
+    const elapsedTime = Date.now() - startTime;
+    const seconds = Math.floor(elapsedTime / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    const timeString =
+      minutes > 0 ? `${minutes}m ${remainingSeconds}s` : `${seconds}s`;
+
     console.error("Unexpected error:", error);
+    console.error(
+      `Time elapsed before error: ${timeString} (${elapsedTime}ms)`
+    );
     process.exit(1);
   }
 }
