@@ -1,4 +1,4 @@
-import CodeEditor from "@/components/CodeEditor";
+import { CodeEditor, type SubmissionResult } from "@/components/CodeEditor";
 import CodeOutput from "@/components/CodeOutput";
 import {
   ResizableHandle,
@@ -31,13 +31,8 @@ export default function EditorPanel({
   isSubmitDisabled,
   isCompleted
 }: EditorPanelProps) {
-  const [executionResult, setExecutionResult] = useState<{
-    stdout: string | null;
-    stderr: string | null;
-    hint: string | null;
-    time?: string;
-    memory?: number;
-  } | null>(null);
+  const [executionResult, setExecutionResult] =
+    useState<SubmissionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isConsoleCollapsed, setIsConsoleCollapsed] = useState(true);
   const consolePanelRef = useRef<ImperativePanelHandle>(null);
@@ -70,10 +65,12 @@ export default function EditorPanel({
               problemTitle={problemTitle}
               problemDescription={problemDescription}
               onSubmissionResult={(result) => {
-                setError(result.error ?? null);
+                setError(result.stderr ?? null);
                 setExecutionResult({
+                  graded: result.graded,
+                  userAttempts: result.userAttempts,
                   stdout: result.stdout ?? null,
-                  stderr: result.error ?? null,
+                  stderr: result.stderr ?? null,
                   hint: result.hint ?? null,
                   time: result.time,
                   memory: result.memory

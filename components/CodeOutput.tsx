@@ -1,19 +1,13 @@
 // TODO: remove stdout from console and consider adding other things like: "'Accepted' in green if you get it right"
 "use client";
 
-type ExecutionLike = {
-  stdout: string | null | undefined;
-  stderr: string | null | undefined;
-  hint?: string | null | undefined;
-  time?: string | undefined;
-  memory?: number | undefined;
-} | null;
+import type { SubmissionResult } from "./CodeEditor";
 
 export default function CodeOutput({
   executionResult,
   error
 }: {
-  executionResult: ExecutionLike;
+  executionResult: SubmissionResult | null;
   error: string | null;
 }) {
   return (
@@ -36,16 +30,22 @@ export default function CodeOutput({
           <span className="text-red-500">{error}</span>
         ) : executionResult ? (
           <>
-            {executionResult?.stdout ? (
-              <pre className="whitespace-pre-wrap text-white">
-                stdout: {executionResult?.stdout}
-              </pre>
-            ) : executionResult?.stderr ? (
+            {executionResult?.stderr ? (
               <pre className="whitespace-pre-wrap text-red-500">
                 stderr: {executionResult?.stderr}
               </pre>
+            ) : executionResult?.userAttempts ? (
+              executionResult.userAttempts.every(
+                (attempt) => attempt === true
+              ) ? (
+                <span className="text-green-500">Accepted</span>
+              ) : (
+                <span className="text-red-500">Not Accepted</span>
+              )
             ) : (
-              <span className="text-white">No output.</span>
+              <span className="text-white">
+                There was no output for you submission
+              </span>
             )}
             {executionResult?.hint && (
               <div className="mt-3 border-t border-zinc-700 pt-3">
