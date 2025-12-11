@@ -67,16 +67,23 @@ int main() {
 }`);
       }
 
+      // For C++, create named variables for test inputs to avoid rvalue reference issues
+      // This handles cases where function takes non-const references
       return replaceIndent(`#include <iostream>
 
 ${sourceCode}
 
 int main() {
-{{indent}}std::cout << ${functionName}(${testInputs[0]})
-{{indent}}          << " | " << ${functionName}(${testInputs[1]})
-{{indent}}          << " | " << ${functionName}(${testInputs[2]})
-{{indent}}          << " | " << ${functionName}(${testInputs[3]})
-{{indent}}          << " | " << ${functionName}(${testInputs[4]})
+{{indent}}auto input0 = ${testInputs[0]};
+{{indent}}auto input1 = ${testInputs[1]};
+{{indent}}auto input2 = ${testInputs[2]};
+{{indent}}auto input3 = ${testInputs[3]};
+{{indent}}auto input4 = ${testInputs[4]};
+{{indent}}std::cout << ${functionName}(input0)
+{{indent}}          << " | " << ${functionName}(input1)
+{{indent}}          << " | " << ${functionName}(input2)
+{{indent}}          << " | " << ${functionName}(input3)
+{{indent}}          << " | " << ${functionName}(input4)
 {{indent}}          << std::endl;
 {{indent}}return 0;
 }`);
