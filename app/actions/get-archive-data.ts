@@ -136,24 +136,34 @@ export async function getArchiveData() {
   );
 
   // Combine problems with submission data
+  // Note: Filter based on UTC date, but allow dates up to 1 day ahead to account
+  // for timezone differences (users ahead of UTC should still see their local "today")
+  const tomorrowServerUTC = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
   const archiveData: ArchiveData[] =
-    problems?.map((problem) => {
-      const submission = submissionsMap.get(problem.id);
+    problems
+      ?.filter((problem) => {
+        // Filter out problems more than 1 day in the future (to account for timezone differences)
+        return problem.active_date <= tomorrowServerUTC;
+      })
+      .map((problem) => {
+        const submission = submissionsMap.get(problem.id);
 
-      return {
-        date: problem.active_date,
-        problem: {
-          title: problem.title
-        },
-        submission: submission
-          ? {
-              attempt_status: submission.attempt_status
-            }
-          : {
-              attempt_status: "not_attempted" as const
-            }
-      };
-    }) || [];
+        return {
+          date: problem.active_date,
+          problem: {
+            title: problem.title
+          },
+          submission: submission
+            ? {
+                attempt_status: submission.attempt_status
+              }
+            : {
+                attempt_status: "not_attempted" as const
+              }
+        };
+      }) || [];
 
   return archiveData;
 }
