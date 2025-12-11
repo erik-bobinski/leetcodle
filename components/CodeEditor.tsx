@@ -95,7 +95,7 @@ export type SubmissionResult = {
   stdout: string | null;
 };
 
-export function CodeEditor({
+export default function CodeEditor({
   template,
   prerequisiteDataStructure,
   problemTitle,

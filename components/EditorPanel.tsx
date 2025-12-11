@@ -1,4 +1,4 @@
-import { CodeEditor, type SubmissionResult } from "@/components/CodeEditor";
+import CodeEditor, { type SubmissionResult } from "@/components/CodeEditor";
 import CodeOutput from "@/components/CodeOutput";
 import {
   ResizableHandle,
