@@ -4,6 +4,7 @@ import CodeEditor from "@/components/CodeEditor";
 import CodeOutput from "@/components/CodeOutput";
 import { GetProblem, UserSubmissionCode } from "@/types/database";
 import { useState } from "react";
+import { type SubmissionResult } from "@/components/CodeEditor";
 
 export default function Playground({
   template,
@@ -20,12 +21,8 @@ export default function Playground({
   latestCode?: UserSubmissionCode | null;
   date?: string;
 }) {
-  const [executionResult, setExecutionResult] = useState<{
-    stdout: string | null;
-    stderr: string | null;
-    time?: string;
-    memory?: number;
-  } | null>(null);
+  const [executionResult, setExecutionResult] =
+    useState<SubmissionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -37,12 +34,15 @@ export default function Playground({
           problemTitle={problemTitle}
           problemDescription={problemDescription}
           onSubmissionResult={(result) => {
-            setError(result.error ?? null);
+            setError(result.stderr ?? null);
             setExecutionResult({
               stdout: result.stdout ?? null,
-              stderr: result.error ?? null,
+              stderr: result.stderr ?? null,
+              hint: result.hint,
               time: result.time,
-              memory: result.memory
+              memory: result.memory,
+              graded: result.graded,
+              userAttempts: result.userAttempts
             });
           }}
           latestCode={latestCode}

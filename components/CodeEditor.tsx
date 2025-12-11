@@ -85,6 +85,16 @@ const leetcodleTheme = createTheme({
   ]
 });
 
+export type SubmissionResult = {
+  graded: boolean;
+  hint: string | null;
+  userAttempts: boolean[];
+  time: string;
+  memory: number;
+  stderr: string | null;
+  stdout: string | null;
+};
+
 export default function CodeEditor({
   template,
   prerequisiteDataStructure,
@@ -100,15 +110,7 @@ export default function CodeEditor({
   prerequisiteDataStructure: GetProblem["prerequisite_data_structure"];
   problemTitle: GetProblem["title"];
   problemDescription: GetProblem["description"];
-  onSubmissionResult?: (result: {
-    graded: boolean;
-    hint: string | null;
-    userAttempts: boolean[];
-    time: string;
-    memory: number;
-    error: string | null;
-    stdout: string | null;
-  }) => void;
+  onSubmissionResult?: (result: SubmissionResult) => void;
   latestCode?: UserSubmissionCode | null;
   date?: string;
   isSubmitDisabled?: boolean;
@@ -558,7 +560,7 @@ export default function CodeEditor({
           grade.graded && "isCorrect" in grade ? grade.isCorrect : [],
         time: grade.time,
         memory: grade.memory,
-        error: grade.error,
+        stderr: grade.error,
         stdout: grade.stdout
       });
     }

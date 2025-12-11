@@ -4,7 +4,7 @@ import { submitCode } from "@/lib/judge0";
 import { languages } from "@/types/editor-languages";
 import parseCodeForSubmission from "@/lib/code-parsers";
 import { getTestArgs } from "./get-test-cases";
-import { gradeSolutionOutput } from "@/lib/ai-tooling";
+import { gradeSolutionOutput, addMissingHeaders } from "@/lib/ai-tooling";
 
 /**
  * Grades solution via LLM comparing user's output to expected output
@@ -26,6 +26,15 @@ export async function gradeSolution(
   sourceCode = sourceCode.trim();
   if (!sourceCode) {
     return new Error("Source code is not valid");
+  }
+
+  // Add missing headers/includes using AI before parsing
+  const codeWithHeaders = await addMissingHeaders(sourceCode, langKey);
+  if (codeWithHeaders instanceof Error) {
+    // If AI fails, continue with original code (don't block submission)
+    console.warn("Failed to add missing headers:", codeWithHeaders.message);
+  } else {
+    sourceCode = codeWithHeaders;
   }
 
   // Get test cases for the current language

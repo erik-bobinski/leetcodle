@@ -650,3 +650,72 @@ Fixed code:`
 
   return fixedCode;
 }
+
+/**
+ * Uses AI to add missing headers/includes to user code before submission
+ * This prevents compilation errors from missing standard library includes
+ * @param sourceCode The raw user code
+ * @param language The programming language key (e.g., 'cpp', 'java', 'go')
+ * @returns The code with missing headers/includes added, or an error
+ */
+export async function addMissingHeaders(
+  sourceCode: string,
+  language: string
+): Promise<string | Error> {
+  const { data, error } = await tryCatch(
+    generateText({
+      model: google("gemini-2.5-flash"),
+      system:
+        "You are a code analyzer that adds missing headers/includes/imports to code. Only add what's missing - do not modify the existing code logic.",
+      prompt: `Analyze the following ${language} code and add any missing headers/includes/imports at the top of the file.
+
+CRITICAL RULES:
+1. ONLY add missing headers/includes/imports - do NOT modify any other part of the code
+2. Place headers/includes at the very top of the file, before any existing code
+3. If headers are already present, do NOT duplicate them
+4. If no headers are needed, return the code unchanged
+5. Preserve all existing code exactly as-is, including whitespace and formatting
+
+Language-specific rules:
+- C++: Add #include directives (e.g., #include <vector>, #include <unordered_set>, #include <iostream>), using namespace std
+- Java: Add import statements (e.g., import java.util.*;)
+- Go: Add import statements (e.g., import "fmt", import "container/list")
+- Python: Add import statements (e.g., import collections, from typing import List)
+- JavaScript: No imports needed (ES6 modules handled separately)
+- Rust: Add use statements (e.g., use std::collections::HashMap;)
+
+Common patterns to detect:
+- C++: vector -> #include <vector>, unordered_set -> #include <unordered_set>, string -> #include <string>, iostream -> #include <iostream>
+- Java: ArrayList -> import java.util.ArrayList, HashMap -> import java.util.HashMap
+- Go: fmt -> import "fmt", container/list -> import "container/list"
+- Python: collections -> import collections, typing -> from typing import List, Dict, etc.
+- Rust: HashMap -> use std::collections::HashMap, Vec -> use std::vec::Vec
+
+Original code:
+\`\`\`${language}
+${sourceCode}
+\`\`\`
+
+Return ONLY the code with headers added (if needed), no explanations or markdown.`
+    })
+  );
+
+  if (error) {
+    return error instanceof Error ? error : new Error(String(error));
+  }
+
+  if (!data || !data.text) {
+    return new Error(`No code returned from AI for ${language}`);
+  }
+
+  // Extract code from markdown code blocks if present
+  let codeWithHeaders = data.text.trim();
+  const codeBlockMatch = codeWithHeaders.match(
+    /```(?:${language}|[\s\S]*?)?\n([\s\S]*?)```/
+  );
+  if (codeBlockMatch) {
+    codeWithHeaders = codeBlockMatch[1].trim();
+  }
+
+  return codeWithHeaders;
+}

@@ -35,12 +35,6 @@ export default function RootLayout({
       }}
     >
       <html lang="en" suppressHydrationWarning>
-        <head>
-          <script
-            src="https://unpkg.com/react-scan/dist/auto.global.js"
-            defer
-          />
-        </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
           suppressHydrationWarning
