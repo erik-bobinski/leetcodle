@@ -1,4 +1,3 @@
-// TODO: remove stdout from console and consider adding other things like: "'Accepted' in green if you get it right"
 "use client";
 
 import type { SubmissionResult } from "./CodeEditor";
