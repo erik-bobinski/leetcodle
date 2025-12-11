@@ -13,6 +13,14 @@ import { tryCatch } from "@/lib/try-catch";
 export async function getProblem(date?: string) {
   const targetDate = date?.trim() || new Date().toISOString().split("T")[0];
 
+  // Prevent access to future problems, compare against UTC date, but allow dates up to 1 day ahead to account
+  const tomorrowServerUTC = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+  if (targetDate > tomorrowServerUTC) {
+    return { error: `Cannot access problems beyond today's date` };
+  }
+
   const { data: problemDataArray, error: problemError } = await tryCatch(
     db
       .select()

@@ -41,7 +41,12 @@ function CustomDayButton({
     return data.date === dayDate;
   });
 
-  const hasProblem = !!dayData?.problem;
+  const todayString = formatLocalDate(new Date());
+  const dayDateString = formatLocalDate(day.date);
+  const isFutureDate = dayDateString > todayString;
+
+  // Only allow clicking on problems that are not in the future
+  const hasProblem = !!dayData?.problem && !isFutureDate;
 
   function handleClick(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
@@ -49,6 +54,12 @@ function CustomDayButton({
     if (!hasProblem) return;
     const dateString = formatLocalDate(day.date);
     const todayString = formatLocalDate(new Date());
+
+    // Prevent access to future problems
+    if (dateString > todayString) {
+      return;
+    }
+
     // If selecting today's problem, navigate without date param
     if (dateString === todayString) {
       router.push("/");
@@ -92,7 +103,8 @@ function CustomDayButton({
 
   // Custom content for each day
   const getDayContent = (dayNumber: number) => {
-    if (dayData?.problem) {
+    // Use hasProblem instead of dayData?.problem to respect future date filtering
+    if (hasProblem && dayData?.problem) {
       return (
         <div className="flex h-full w-full flex-col items-start p-1">
           <div className="text-muted-foreground text-xs font-medium">
@@ -113,7 +125,7 @@ function CustomDayButton({
       );
     }
 
-    // Fallback for days without problems
+    // Fallback for days without problems (including future dates)
     return (
       <div className="flex h-full w-full flex-col items-start p-1">
         <div className="text-muted-foreground text-xs font-medium">
